@@ -1179,12 +1179,12 @@ async function seed(){
 }
 seed().catch(e=>console.error('seed error', e));
 
-// Simple root route (so visiting the base URL shows something)
+// Simple root route so visiting the base URL shows something
 app.get('/', (req, res) => {
   res.send('Kora API is running ✅');
 });
 
-// Health check route (for UCSD, uptime checks, etc.)
+// Health check for UCSD / uptime checks
 app.get('/health', (req, res) => {
   res.json({
     status: 'ok',
@@ -1196,5 +1196,5 @@ app.get('/health', (req, res) => {
 const PORT = process.env.PORT || 4000;
 
 app.listen(PORT, () => {
-  console.log(`API listening on port ${PORT}`);
+  console.log(`Kora API listening on port ${PORT}`);
 });
