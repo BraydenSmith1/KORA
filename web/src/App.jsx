@@ -25,16 +25,32 @@ function useAuth(){
   const [userId, setUserId] = useState(localStorage.getItem('USER_ID') || '');
   const [regionId, setRegionId] = useState(localStorage.getItem('REGION_ID') || 'region-1');
   const [role, setRole] = useState(localStorage.getItem('PILOT_ROLE') || '');
+  const [token, setToken] = useState(localStorage.getItem('AUTH_TOKEN') || '');
+
+  const decodeToken = useCallback((tok)=>{
+    if(!tok) return null;
+    const parts = tok.split('.');
+    if(parts.length !== 3) return null;
+    try{
+      const normalized = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+      const payload = JSON.parse(atob(normalized));
+      return payload;
+    }catch(_err){
+      return null;
+    }
+  }, []);
 
   const api = useMemo(()=>{
     return axios.create({
       baseURL: API_URL,
-      headers: userId ? { 'x-user-id': userId } : {}
+      headers: token
+        ? { Authorization: `Bearer ${token}` }
+        : userId ? { 'x-user-id': userId } : {}
     });
-  }, [userId]);
+  }, [token, userId]);
 
   const refresh = useCallback(async ()=>{
-    if(!userId) return;
+    if(!userId && !token) return;
     try{
       const { data } = await api.get('/me');
       setUser(data.user);
@@ -46,11 +62,24 @@ function useAuth(){
     }catch(err){
       console.warn('Refresh failed', err);
     }
-  }, [api, userId, regionId]);
+  }, [api, userId, token, regionId]);
 
   useEffect(()=>{
     refresh();
   }, [refresh]);
+
+  useEffect(()=>{
+    if(!userId && token){
+      const payload = decodeToken(token);
+      if(payload?.sub){
+        setUserId(payload.sub);
+        if(payload.regionId){
+          setRegionId(payload.regionId);
+          localStorage.setItem('REGION_ID', payload.regionId);
+        }
+      }
+    }
+  }, [decodeToken, token, userId]);
 
   const login = useCallback(async (nextRole, password) => {
     const { data } = await axios.post(`${API_URL}/auth/pilot-login`, { role: nextRole, password });
@@ -58,6 +87,10 @@ function useAuth(){
     const resolvedRegion = data.user.regionId || 'region-1';
     localStorage.setItem('REGION_ID', resolvedRegion);
     localStorage.setItem('PILOT_ROLE', nextRole);
+    if(data.token){
+      localStorage.setItem('AUTH_TOKEN', data.token);
+      setToken(data.token);
+    }
     setRegionId(resolvedRegion);
     setUserId(data.user.id);
     setUser(data.user);
@@ -69,14 +102,46 @@ function useAuth(){
     localStorage.removeItem('USER_ID');
     localStorage.removeItem('REGION_ID');
     localStorage.removeItem('PILOT_ROLE');
+    localStorage.removeItem('AUTH_TOKEN');
     setUser(null);
     setWallet(null);
     setUserId('');
     setRegionId('region-1');
     setRole('');
+    setToken('');
   }, []);
 
-  return { user, wallet, userId, regionId, role, api, login, logout, refresh };
+  const loginWithEmail = useCallback(async (email, password)=>{
+    const { data } = await axios.post(`${API_URL}/auth/login`, { email, password });
+    localStorage.setItem('USER_ID', data.user.id);
+    localStorage.setItem('REGION_ID', data.user.regionId || 'region-1');
+    localStorage.setItem('AUTH_TOKEN', data.token);
+    setUserId(data.user.id);
+    setRegionId(data.user.regionId || 'region-1');
+    setToken(data.token);
+    setUser(data.user);
+    setWallet(null);
+    setRole('');
+  }, []);
+
+  const registerWithEmail = useCallback(async (email, password, name)=>{
+    const { data } = await axios.post(`${API_URL}/auth/register`, {
+      email,
+      password,
+      name: name || undefined
+    });
+    localStorage.setItem('USER_ID', data.user.id);
+    localStorage.setItem('REGION_ID', data.user.regionId || 'region-1');
+    localStorage.setItem('AUTH_TOKEN', data.token);
+    setUserId(data.user.id);
+    setRegionId(data.user.regionId || 'region-1');
+    setToken(data.token);
+    setUser(data.user);
+    setWallet(null);
+    setRole('');
+  }, []);
+
+  return { user, wallet, userId, regionId, role, api, login, loginWithEmail, registerWithEmail, logout, refresh };
 }
 
 const NAV_CONFIG = {
@@ -96,7 +161,19 @@ const NAV_CONFIG = {
 };
 
 export default function App(){
-  const { user, wallet, userId, regionId, role, api, login, logout, refresh } = useAuth();
+  const {
+    user,
+    wallet,
+    userId,
+    regionId,
+    role,
+    api,
+    login,
+    loginWithEmail,
+    registerWithEmail,
+    logout,
+    refresh
+  } = useAuth();
   const [view, setView] = useState(role === 'anchor' ? 'anchor-dashboard' : 'operator-dashboard');
   const [userPanelOpen, setUserPanelOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -132,7 +209,13 @@ export default function App(){
   const navItems = NAV_CONFIG[role] || [];
 
   if(!userId){
-    return <LandingPage onPilotLogin={login} />;
+    return (
+      <LandingPage
+        onPilotLogin={login}
+        onEmailLogin={loginWithEmail}
+        onEmailRegister={registerWithEmail}
+      />
+    );
   }
 
   return (

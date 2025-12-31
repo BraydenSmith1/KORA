@@ -2,6 +2,7 @@ import 'dotenv/config'
 import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
+import crypto from 'crypto';
 import { PrismaClient } from '@prisma/client';
 import { z } from 'zod';
 import { PaymentsAdapter } from './adapters/payments.js';
@@ -15,6 +16,11 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(morgan('dev'));
+
+const JWT_SECRET = process.env.JWT_SECRET || 'kora-dev-secret-change-me';
+if(!process.env.JWT_SECRET){
+  console.warn('[Auth] JWT_SECRET not set; using insecure default. Set JWT_SECRET in .env.');
+}
 
 const toNumber = (value) => Number(value ?? 0);
 const safeJson = (value) => {
@@ -38,6 +44,74 @@ const startOfWeek = (date = new Date()) => {
   d.setDate(d.getDate() - delta);
   return d;
 };
+
+const sanitizeUser = (user) => {
+  if(!user) return null;
+  const { passwordHash, ...rest } = user;
+  return rest;
+};
+
+function hashPassword(password){
+  const salt = crypto.randomBytes(16).toString('hex');
+  const hash = crypto.pbkdf2Sync(password, salt, 100000, 64, 'sha512').toString('hex');
+  return `${salt}:${hash}`;
+}
+
+function verifyPassword(password, stored){
+  if(!stored) return false;
+  const [salt, hash] = stored.split(':');
+  if(!salt || !hash) return false;
+  const verifyHash = crypto.pbkdf2Sync(password, salt, 100000, 64, 'sha512').toString('hex');
+  try{
+    return crypto.timingSafeEqual(Buffer.from(hash, 'hex'), Buffer.from(verifyHash, 'hex'));
+  }catch(_err){
+    return false;
+  }
+}
+
+function base64UrlEncode(input){
+  return Buffer.from(input).toString('base64url');
+}
+
+function base64UrlDecode(input){
+  return Buffer.from(input, 'base64url').toString('utf8');
+}
+
+function signToken(user){
+  const header = { alg: 'HS256', typ: 'JWT' };
+  const exp = Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60); // 7 days
+  const payload = {
+    sub: user.id,
+    email: user.email,
+    regionId: user.regionId || null,
+    exp
+  };
+  const unsigned = `${base64UrlEncode(JSON.stringify(header))}.${base64UrlEncode(JSON.stringify(payload))}`;
+  const signature = crypto.createHmac('sha256', JWT_SECRET).update(unsigned).digest('base64url');
+  return `${unsigned}.${signature}`;
+}
+
+function verifyToken(token){
+  if(!token) return null;
+  const parts = token.split('.');
+  if(parts.length !== 3) return null;
+  const [headerB64, payloadB64, signature] = parts;
+  const unsigned = `${headerB64}.${payloadB64}`;
+  const expectedSig = crypto.createHmac('sha256', JWT_SECRET).update(unsigned).digest('base64url');
+  try{
+    if(!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSig))) return null;
+  }catch(_err){
+    return null;
+  }
+  let payload;
+  try{
+    payload = JSON.parse(base64UrlDecode(payloadB64));
+  }catch(_err){
+    return null;
+  }
+  if(payload.exp && Date.now() / 1000 > payload.exp) return null;
+  return payload;
+}
 
 const PILOT_USERS = {
   operator: {
@@ -193,10 +267,31 @@ function getDisplayName(user){
   return user?.name || user?.organization || user?.email || '—';
 }
 
+async function resolveAuthUser(req){
+  const authHeader = req.header('authorization');
+  if(authHeader?.startsWith('Bearer ')){
+    const token = authHeader.slice(7);
+    try{
+      const payload = verifyToken(token);
+      if(!payload) throw new Error('token invalid');
+      const user = await prisma.user.findUnique({ where: { id: payload.sub } });
+      if(user) return user;
+    }catch(_err){
+      // fall back to legacy header
+    }
+  }
+
+  const legacyUserId = req.header('x-user-id');
+  if(legacyUserId){
+    console.warn('[Auth] Using legacy x-user-id header; migrate to Bearer token auth.');
+    const user = await prisma.user.findUnique({ where: { id: legacyUserId } });
+    if(user) return user;
+  }
+  return null;
+}
+
 async function requireUser(req, res, next){
-  const userId = req.header('x-user-id');
-  if(!userId) return res.status(401).json({ error: 'Unauthorized' });
-  const user = await prisma.user.findUnique({ where: { id: userId } });
+  const user = await resolveAuthUser(req);
   if(!user) return res.status(401).json({ error: 'Unauthorized' });
   req.user = user;
   next();
@@ -211,7 +306,63 @@ app.post('/auth/dev-login', async (req, res) => {
   } else if(body.regionId && user.regionId !== body.regionId){
     user = await prisma.user.update({ where: { id: user.id }, data: { regionId: body.regionId } });
   }
-  res.json({ user });
+  const token = signToken(user);
+  res.json({ user: sanitizeUser(user), token, mode: 'dev' });
+});
+
+app.post('/auth/register', async (req, res) => {
+  const body = z.object({
+    email: z.string().email(),
+    password: z.string().min(6),
+    name: z.string().optional(),
+    regionId: z.string().optional()
+  }).parse(req.body || {});
+
+  const existing = await prisma.user.findUnique({ where: { email: body.email } });
+  if(existing?.passwordHash){
+    return res.status(409).json({ error: 'User already exists.' });
+  }
+
+  const passwordHash = hashPassword(body.password);
+  const user = existing
+    ? await prisma.user.update({
+        where: { id: existing.id },
+        data: {
+          passwordHash,
+          name: body.name || existing.name,
+          regionId: body.regionId || existing.regionId || 'region-1'
+        }
+      })
+    : await prisma.user.create({
+        data: {
+          email: body.email,
+          name: body.name || body.email.split('@')[0],
+          regionId: body.regionId || 'region-1',
+          passwordHash
+        }
+      });
+
+  if(!existing){
+    await prisma.wallet.create({ data: { userId: user.id, balanceCents: 0 } });
+  }
+
+  const token = signToken(user);
+  res.json({ user: sanitizeUser(user), token });
+});
+
+app.post('/auth/login', async (req, res) => {
+  const body = z.object({
+    email: z.string().email(),
+    password: z.string().min(1)
+  }).parse(req.body || {});
+
+  const user = await prisma.user.findUnique({ where: { email: body.email } });
+  if(!user || !verifyPassword(body.password, user.passwordHash)){
+    return res.status(401).json({ error: 'Invalid credentials' });
+  }
+
+  const token = signToken(user);
+  res.json({ user: sanitizeUser(user), token });
 });
 
 app.post('/auth/pilot-login', async (req, res) => {
@@ -238,8 +389,9 @@ app.post('/auth/pilot-login', async (req, res) => {
   }
 
   res.json({
-    user,
-    role: body.role
+    user: sanitizeUser(user),
+    role: body.role,
+    token: signToken(user)
   });
 });
 
@@ -421,7 +573,7 @@ app.get('/analytics/overview', async (_req, res) => {
 });
 app.get('/me', requireUser, async (req, res) => {
   const wallet = await prisma.wallet.findUnique({ where: { userId: req.user.id } });
-  res.json({ user: req.user, wallet });
+  res.json({ user: sanitizeUser(req.user), wallet });
 });
 
 app.put('/profile', requireUser, async (req, res) => {
@@ -460,7 +612,7 @@ app.put('/profile', requireUser, async (req, res) => {
   }
 
   const [user, wallet] = await prisma.$transaction(updates);
-  res.json({ user, wallet });
+  res.json({ user: sanitizeUser(user), wallet });
 });
 
 app.get('/assets', requireUser, async (req, res) => {

@@ -4,7 +4,7 @@ import axios from "axios";
 // Prefer build-time env var from Render; allow localStorage override for manual testing.
 const API_URL = import.meta.env.VITE_API_URL || localStorage.getItem("API_URL") || "http://localhost:4000";
 
-export default function LandingPage({ onPilotLogin }) {
+export default function LandingPage({ onPilotLogin, onEmailLogin, onEmailRegister }) {
   const [stats, setStats] = useState(null);
   const [statsError, setStatsError] = useState(false);
   const [loadingStats, setLoadingStats] = useState(true);
@@ -12,6 +12,10 @@ export default function LandingPage({ onPilotLogin }) {
   const [anchorPassword, setAnchorPassword] = useState("");
   const [submittingRole, setSubmittingRole] = useState("");
   const [loginError, setLoginError] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [submittingEmail, setSubmittingEmail] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -94,6 +98,40 @@ export default function LandingPage({ onPilotLogin }) {
             onSubmit={() => handleSubmit("anchor")}
             submitting={submittingRole === "anchor"}
           />
+          <EmailAuthCard
+            title="Email login"
+            email={email}
+            name={name}
+            password={password}
+            submitting={!!submittingEmail}
+            onEmailChange={setEmail}
+            onPasswordChange={setPassword}
+            onNameChange={setName}
+            onLogin={async ()=>{
+              setLoginError("");
+              setSubmittingEmail("login");
+              try{
+                await onEmailLogin(email, password);
+              }catch(err){
+                const message = err?.response?.data?.error || err.message || "Login failed.";
+                setLoginError(message);
+              }finally{
+                setSubmittingEmail("");
+              }
+            }}
+            onRegister={async ()=>{
+              setLoginError("");
+              setSubmittingEmail("register");
+              try{
+                await onEmailRegister(email, password, name);
+              }catch(err){
+                const message = err?.response?.data?.error || err.message || "Register failed.";
+                setLoginError(message);
+              }finally{
+                setSubmittingEmail("");
+              }
+            }}
+          />
         </div>
         {loginError && (
           <div className="alert" style={{ marginTop: 12 }}>{loginError}</div>
@@ -163,6 +201,64 @@ function LoginCard({ title, subtitle, password, onPasswordChange, onSubmit, subm
       <button type="button" onClick={onSubmit} disabled={submitting}>
         {submitting ? "Checking…" : "Enter dashboard"}
       </button>
+    </div>
+  );
+}
+
+function EmailAuthCard({
+  title,
+  email,
+  name,
+  password,
+  submitting,
+  onEmailChange,
+  onNameChange,
+  onPasswordChange,
+  onLogin,
+  onRegister
+}){
+  return (
+    <div className="info-card login-card">
+      <h3>{title}</h3>
+      <p>Use email + password to create or access your account.</p>
+      <label className="input-stack">
+        <span>Email</span>
+        <input
+          type="email"
+          placeholder="you@example.com"
+          value={email}
+          onChange={(event)=>onEmailChange(event.target.value)}
+          disabled={submitting}
+        />
+      </label>
+      <label className="input-stack">
+        <span>Name (optional)</span>
+        <input
+          type="text"
+          placeholder="Your name"
+          value={name}
+          onChange={(event)=>onNameChange(event.target.value)}
+          disabled={submitting}
+        />
+      </label>
+      <label className="input-stack">
+        <span>Password</span>
+        <input
+          type="password"
+          placeholder="•••••"
+          value={password}
+          onChange={(event)=>onPasswordChange(event.target.value)}
+          disabled={submitting}
+        />
+      </label>
+      <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+        <button type="button" onClick={onLogin} disabled={submitting || !email || !password}>
+          {submitting === "login" ? "Logging in…" : "Login"}
+        </button>
+        <button type="button" onClick={onRegister} disabled={submitting || !email || !password}>
+          {submitting === "register" ? "Creating…" : "Register"}
+        </button>
+      </div>
     </div>
   );
 }
