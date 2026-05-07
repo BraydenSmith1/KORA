@@ -1,0 +1,139 @@
+# KORA Microgrid Optimizer - Docker Compose
+# ==========================================
+# Production deployment configuration
+#
+# Usage:
+#   docker compose up -d              # Start all services
+#   docker compose logs -f            # View logs
+#   docker compose down               # Stop all services
+#
+# Environment variables:
+#   Create a .env file with:
+#     DATABASE_URL=postgresql://user:pass@host:5432/kora
+#     JWT_SECRET=your-secret-key
+#     API_URL=https://api.yourdomain.com
+
+version: '3.8'
+
+services:
+  # ==========================================================================
+  # PostgreSQL Database
+  # ==========================================================================
+  db:
+    image: postgres:16-alpine
+    container_name: kora-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-kora}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-kora_secure_password}
+      POSTGRES_DB: ${POSTGRES_DB:-kora}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-kora}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ==========================================================================
+  # API Server
+  # ==========================================================================
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: kora-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-kora}:${POSTGRES_PASSWORD:-kora_secure_password}@db:5432/${POSTGRES_DB:-kora}
+      JWT_SECRET: ${JWT_SECRET:-change-this-in-production}
+    ports:
+      - "4000:4000"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:4000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ==========================================================================
+  # Python Optimizer Service
+  # ==========================================================================
+  optimizer:
+    build:
+      context: ./python-optimizer
+      dockerfile: Dockerfile
+    container_name: kora-optimizer
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      KORA_API_URL: http://api:4000
+      KORA_SITE_CONFIG: /app/sites/mahavelona.yaml
+      KORA_LOG_FORMAT: json
+      KORA_LOG_LEVEL: INFO
+      KORA_CACHE_ENABLED: "true"
+    volumes:
+      - optimizer_cache:/app/cache
+      - optimizer_results:/app/results
+      - optimizer_logs:/app/logs
+    command: ["--config", "/app/sites/mahavelona.yaml", "--json-logs", "--interval", "15"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "from kora import KoraService; print('OK')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ==========================================================================
+  # Web Dashboard (Optional - for development)
+  # ==========================================================================
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${API_URL:-http://localhost:4000}
+    container_name: kora-web
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "3000:80"
+    profiles:
+      - with-web
+
+  # ==========================================================================
+  # Caddy Reverse Proxy (Optional - for HTTPS)
+  # ==========================================================================
+  caddy:
+    image: caddy:2-alpine
+    container_name: kora-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    profiles:
+      - with-caddy
+
+volumes:
+  postgres_data:
+  optimizer_cache:
+  optimizer_results:
+  optimizer_logs:
+  caddy_data:
+  caddy_config:
+
+networks:
+  default:
+    name: kora-network

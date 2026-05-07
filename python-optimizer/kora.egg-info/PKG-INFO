@@ -1,0 +1,9 @@
+Metadata-Version: 2.4
+Name: kora
+Version: 0.3.0
+Requires-Python: >=3.9
+Requires-Dist: numpy
+Requires-Dist: requests
+Requires-Dist: pyyaml
+Dynamic: requires-dist
+Dynamic: requires-python

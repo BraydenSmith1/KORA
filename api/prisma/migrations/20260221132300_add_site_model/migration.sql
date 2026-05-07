@@ -1,0 +1,26 @@
+-- CreateTable
+CREATE TABLE "Site" (
+    "id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "location" TEXT,
+    "timezone" TEXT NOT NULL DEFAULT 'Indian/Antananarivo',
+    "pvCapacityKwp" DOUBLE PRECISION NOT NULL,
+    "batteryCapacityKwh" DOUBLE PRECISION NOT NULL,
+    "batteryPowerKw" DOUBLE PRECISION NOT NULL,
+    "socMinPct" DOUBLE PRECISION NOT NULL DEFAULT 20,
+    "socMaxPct" DOUBLE PRECISION NOT NULL DEFAULT 95,
+    "etaCharge" DOUBLE PRECISION NOT NULL DEFAULT 0.94,
+    "etaDischarge" DOUBLE PRECISION NOT NULL DEFAULT 0.94,
+    "peakDemandKw" DOUBLE PRECISION,
+    "baseDemandKw" DOUBLE PRECISION,
+    "customerCount" INTEGER,
+    "priceMinAriary" DOUBLE PRECISION NOT NULL DEFAULT 1000,
+    "priceMaxAriary" DOUBLE PRECISION NOT NULL DEFAULT 2500,
+    "priceRefAriary" DOUBLE PRECISION NOT NULL DEFAULT 1750,
+    "elasticity" DOUBLE PRECISION NOT NULL DEFAULT 0.6,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Site_pkey" PRIMARY KEY ("id")
+);

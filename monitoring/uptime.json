@@ -1,0 +1,106 @@
+{
+  "name": "KORA Mahavelona Monitoring",
+  "description": "Uptime monitoring configuration for Better Uptime / UptimeRobot",
+  "monitors": [
+    {
+      "name": "KORA API Health",
+      "url": "${API_URL}/health",
+      "type": "http",
+      "method": "GET",
+      "interval": 60,
+      "timeout": 30,
+      "expected_status": 200,
+      "alert_contacts": ["ops@africagreentec.com"],
+      "regions": ["eu-west", "us-east"],
+      "notes": "Main API health endpoint. Returns 200 if database and services are healthy."
+    },
+    {
+      "name": "KORA Optimizer Health",
+      "url": "${OPTIMIZER_URL}/health",
+      "type": "http",
+      "method": "GET",
+      "interval": 300,
+      "timeout": 30,
+      "expected_status": 200,
+      "alert_contacts": ["ops@africagreentec.com"],
+      "notes": "Optimizer service health. Checks last run status and age."
+    },
+    {
+      "name": "KORA Dashboard",
+      "url": "${WEB_URL}",
+      "type": "http",
+      "method": "GET",
+      "interval": 300,
+      "timeout": 30,
+      "expected_status": 200,
+      "alert_contacts": ["ops@africagreentec.com"],
+      "notes": "Web dashboard availability."
+    },
+    {
+      "name": "Database Connection",
+      "url": "${API_URL}/health/db",
+      "type": "http",
+      "method": "GET",
+      "interval": 120,
+      "timeout": 10,
+      "expected_status": 200,
+      "alert_contacts": ["ops@africagreentec.com"],
+      "notes": "Database connectivity check."
+    }
+  ],
+  "status_page": {
+    "name": "KORA Status",
+    "subdomain": "status.kora",
+    "custom_domain": "status.kora.africagreentec.com",
+    "components": [
+      {
+        "name": "API",
+        "description": "REST API for dashboard and mobile apps"
+      },
+      {
+        "name": "Optimizer",
+        "description": "Python optimization engine"
+      },
+      {
+        "name": "Dashboard",
+        "description": "Operator web interface"
+      },
+      {
+        "name": "Database",
+        "description": "PostgreSQL database"
+      }
+    ]
+  },
+  "alerting": {
+    "channels": [
+      {
+        "type": "email",
+        "address": "ops@africagreentec.com",
+        "notify_on": ["down", "up", "degraded"]
+      },
+      {
+        "type": "slack",
+        "webhook_url": "${SLACK_WEBHOOK_URL}",
+        "channel": "#kora-alerts",
+        "notify_on": ["down", "degraded"]
+      },
+      {
+        "type": "sms",
+        "phone": "${OPS_PHONE}",
+        "notify_on": ["down"]
+      }
+    ],
+    "escalation": {
+      "after_minutes": 15,
+      "escalate_to": ["manager@africagreentec.com"]
+    }
+  },
+  "maintenance_windows": [
+    {
+      "name": "Weekly Maintenance",
+      "schedule": "0 2 * * 0",
+      "duration_minutes": 60,
+      "timezone": "Africa/Nairobi"
+    }
+  ]
+}

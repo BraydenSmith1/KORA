@@ -27,6 +27,12 @@ npm run dev
 ```
 Web: http://localhost:5173
 
+## Live telemetry (Modbus → API → UI)
+- Collector: `python-optimizer/modbus_collector.py` polls Modbus TCP (e.g., RTDS) and posts JSON to the API.
+- API ingest: `POST /api/ingest` (already in `api/src/server.js`) accepts an array of `{timestamp, signal, value, unit_id}`; it stores to `EventLog` and broadcasts over SSE.
+- Live stream: `GET /api/stream` (Server-Sent Events). The web/mobile app can subscribe and render real-time values.
+- Quick test: run the API (`npm run dev`), start the collector with a sample config, then `curl http://localhost:4000/api/stream` to see events.
+
 ## Blockchain (Polygon Amoy) Integration
 
 The API now posts every matched trade to a deployed `TradeRegistry` contract. Configure both the server and the web client before running:

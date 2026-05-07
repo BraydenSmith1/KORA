@@ -1,0 +1,2015 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>KORA Market Study</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">KORA Market Study</h1>
+</header>
+<h1 id="kora-market-study">KORA Market Study</h1>
+<h2
+id="distributed-energy-resource-management-for-mini-grids-and-microgrids">Distributed
+Energy Resource Management for Mini-grids and Microgrids</h2>
+<p><strong>Prepared for:</strong> EU Innovation Fund PDA Application
+<strong>Date:</strong> April 2026 <strong>Version:</strong> 1.0</p>
+<hr />
+<h2 id="table-of-contents">Table of Contents</h2>
+<ol type="1">
+<li><a href="#1-executive-summary">Executive Summary</a></li>
+<li><a href="#2-market-definition--scope">Market Definition &amp;
+Scope</a></li>
+<li><a href="#3-global-market-analysis">Global Market Analysis</a></li>
+<li><a href="#4-regional-market-deep-dives">Regional Market
+Deep-Dives</a></li>
+<li><a href="#5-market-drivers--trends">Market Drivers &amp;
+Trends</a></li>
+<li><a href="#6-competitive-landscape">Competitive Landscape</a></li>
+<li><a href="#7-customer-analysis">Customer Analysis</a></li>
+<li><a href="#8-market-entry-strategy">Market Entry Strategy</a></li>
+<li><a href="#9-market-projections">Market Projections</a></li>
+<li><a href="#10-sources--methodology">Sources &amp;
+Methodology</a></li>
+</ol>
+<hr />
+<h2 id="executive-summary">1. Executive Summary</h2>
+<p>The distributed energy resource (DER) management software market is
+experiencing rapid growth, driven by the global energy transition,
+declining renewable costs, and increasing grid decentralization. Within
+this market, mini-grid and microgrid optimization software represents a
+high-growth segment with acute customer pain points and limited
+incumbent solutions.</p>
+<h3 id="key-findings">Key Findings</h3>
+<p><strong>Market Size:</strong> - Global DER management software:
+<strong>€45 billion by 2030</strong> (18% CAGR) - Mini-grid/microgrid
+segment: <strong>€8 billion by 2030</strong> (32% CAGR) - African
+mini-grid software: <strong>€450 million by 2028</strong> (45% CAGR)</p>
+<p><strong>Market Dynamics:</strong> - 35,000+ operational mini-grids
+globally, projected 200,000+ by 2030 - 70-80% of mini-grids suffer
+significant curtailment (&gt;40%) - Software penetration currently
+&lt;15%, projected 60%+ by 2030</p>
+<p><strong>Opportunity:</strong> - First-mover advantage in
+optimization-focused software - Hardware commoditization shifts value to
+software/intelligence - Strong alignment with climate finance and impact
+investment</p>
+<p><strong>KORA’s Positioning:</strong> - Target initial market: €25
+million (Madagascar + Kenya) - Expand to: €450 million (Pan-African) -
+Long-term: €8 billion (Global microgrids)</p>
+<hr />
+<h2 id="market-definition-scope">2. Market Definition &amp; Scope</h2>
+<h3 id="what-is-a-mini-gridmicrogrid">2.1 What is a
+Mini-grid/Microgrid?</h3>
+<p>A <strong>mini-grid</strong> (or microgrid) is a localized electrical
+system that can operate independently from the main grid, typically
+comprising:</p>
+<ul>
+<li><strong>Generation:</strong> Solar PV, wind, small hydro, and/or
+diesel/gas backup</li>
+<li><strong>Storage:</strong> Battery systems (increasingly
+lithium-ion)</li>
+<li><strong>Distribution:</strong> Low/medium voltage network</li>
+<li><strong>Control:</strong> Energy management and metering
+systems</li>
+<li><strong>Customers:</strong> Residential, commercial, and
+institutional users</li>
+</ul>
+<p><strong>Size Range:</strong> | Category | Capacity | Customers |
+Typical Use Case | |———-|———-|———–|——————| | Pico-grid | &lt;1 kW | 1-5
+| Single building | | Nano-grid | 1-10 kW | 5-50 | Small village | |
+Mini-grid | 10-1,000 kW | 50-5,000 | Village/town | | Microgrid | 1-10
+MW | 5,000-50,000 | Industrial/campus/island |</p>
+<p><strong>KORA’s Target:</strong> Mini-grids (10-1,000 kW) and small
+microgrids (1-5 MW)</p>
+<h3 id="market-scope">2.2 Market Scope</h3>
+<p>This study covers the <strong>software and intelligence
+layer</strong> for mini-grids, specifically:</p>
+<p><strong>In Scope:</strong> - Energy management systems (EMS) -
+Dispatch optimization software - Demand response platforms - Forecasting
+and analytics - Remote monitoring and control - Customer billing and
+metering integration</p>
+<p><strong>Out of Scope:</strong> - Hardware (panels, batteries,
+inverters) - Physical installation services - Project development and
+financing - Grid-scale DERMS (&gt;10 MW systems)</p>
+<h3 id="value-chain-position">2.3 Value Chain Position</h3>
+<pre><code>┌─────────────────────────────────────────────────────────────────┐
+│                    MINI-GRID VALUE CHAIN                         │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  PROJECT      EQUIPMENT     INSTALLATION    OPERATIONS         │
+│  DEVELOPMENT  SUPPLY        &amp; COMMISSIONING &amp; MAINTENANCE       │
+│                                                                 │
+│  • Site       • Solar       • Civil works   • Monitoring       │
+│    selection    panels      • Electrical    • Maintenance      │
+│  • Permitting • Batteries   • Grid build    • Billing          │
+│  • Financing  • Inverters   • Metering      • Customer svc     │
+│  • Design     • Meters      • Testing       • OPTIMIZATION ◄── │
+│                                                                 │
+│  5-15%        35-45%        25-30%          15-20%              │
+│  of CapEx     of CapEx      of CapEx        of OpEx/year       │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+
+KORA captures value in OPERATIONS through software subscription</code></pre>
+<hr />
+<h2 id="global-market-analysis">3. Global Market Analysis</h2>
+<h3 id="market-size-growth">3.1 Market Size &amp; Growth</h3>
+<p><strong>DER Management Software (Total Market)</strong></p>
+<table>
+<thead>
+<tr>
+<th>Year</th>
+<th>Market Size (€B)</th>
+<th>Growth Rate</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2023</td>
+<td>12.5</td>
+<td>—</td>
+</tr>
+<tr>
+<td>2024</td>
+<td>15.0</td>
+<td>20%</td>
+</tr>
+<tr>
+<td>2025</td>
+<td>18.2</td>
+<td>21%</td>
+</tr>
+<tr>
+<td>2026</td>
+<td>22.1</td>
+<td>21%</td>
+</tr>
+<tr>
+<td>2027</td>
+<td>26.8</td>
+<td>21%</td>
+</tr>
+<tr>
+<td>2028</td>
+<td>32.2</td>
+<td>20%</td>
+</tr>
+<tr>
+<td>2029</td>
+<td>38.4</td>
+<td>19%</td>
+</tr>
+<tr>
+<td>2030</td>
+<td>45.0</td>
+<td>17%</td>
+</tr>
+</tbody>
+</table>
+<p><em>Source: BloombergNEF, IEA, Wood Mackenzie analysis</em></p>
+<p><strong>Mini-grid/Microgrid Software Segment</strong></p>
+<table>
+<thead>
+<tr>
+<th>Year</th>
+<th>Market Size (€B)</th>
+<th>% of Total</th>
+<th>Growth Rate</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2023</td>
+<td>1.2</td>
+<td>9.6%</td>
+<td>—</td>
+</tr>
+<tr>
+<td>2024</td>
+<td>1.6</td>
+<td>10.7%</td>
+<td>33%</td>
+</tr>
+<tr>
+<td>2025</td>
+<td>2.2</td>
+<td>12.1%</td>
+<td>38%</td>
+</tr>
+<tr>
+<td>2026</td>
+<td>3.0</td>
+<td>13.6%</td>
+<td>36%</td>
+</tr>
+<tr>
+<td>2027</td>
+<td>4.0</td>
+<td>14.9%</td>
+<td>33%</td>
+</tr>
+<tr>
+<td>2028</td>
+<td>5.2</td>
+<td>16.1%</td>
+<td>30%</td>
+</tr>
+<tr>
+<td>2029</td>
+<td>6.5</td>
+<td>16.9%</td>
+<td>25%</td>
+</tr>
+<tr>
+<td>2030</td>
+<td>8.0</td>
+<td>17.8%</td>
+<td>23%</td>
+</tr>
+</tbody>
+</table>
+<p><em>Mini-grid software is the fastest-growing DER segment</em></p>
+<h3 id="market-segmentation">3.2 Market Segmentation</h3>
+<p><strong>By Geography (2025)</strong></p>
+<table>
+<thead>
+<tr>
+<th>Region</th>
+<th>Market Share</th>
+<th>Size (€B)</th>
+<th>Key Drivers</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Asia-Pacific</td>
+<td>35%</td>
+<td>0.77</td>
+<td>India, Indonesia, Philippines</td>
+</tr>
+<tr>
+<td>Sub-Saharan Africa</td>
+<td>28%</td>
+<td>0.62</td>
+<td>Energy access, donor funding</td>
+</tr>
+<tr>
+<td>Latin America</td>
+<td>15%</td>
+<td>0.33</td>
+<td>Amazon region, island nations</td>
+</tr>
+<tr>
+<td>Middle East &amp; North Africa</td>
+<td>10%</td>
+<td>0.22</td>
+<td>Oil states diversification</td>
+</tr>
+<tr>
+<td>Europe</td>
+<td>7%</td>
+<td>0.15</td>
+<td>Island territories, emergency backup</td>
+</tr>
+<tr>
+<td>North America</td>
+<td>5%</td>
+<td>0.11</td>
+<td>Remote communities, resilience</td>
+</tr>
+</tbody>
+</table>
+<p><strong>By Application (2025)</strong></p>
+<table>
+<thead>
+<tr>
+<th>Application</th>
+<th>Market Share</th>
+<th>Growth Rate</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Rural electrification</td>
+<td>45%</td>
+<td>35%</td>
+</tr>
+<tr>
+<td>Commercial &amp; Industrial</td>
+<td>25%</td>
+<td>28%</td>
+</tr>
+<tr>
+<td>Island utilities</td>
+<td>15%</td>
+<td>22%</td>
+</tr>
+<tr>
+<td>Emergency/resilience</td>
+<td>10%</td>
+<td>40%</td>
+</tr>
+<tr>
+<td>Campus/institutional</td>
+<td>5%</td>
+<td>25%</td>
+</tr>
+</tbody>
+</table>
+<p><strong>By Technology (2025)</strong></p>
+<table>
+<thead>
+<tr>
+<th>Technology</th>
+<th>Market Share</th>
+<th>Trend</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Basic SCADA/monitoring</td>
+<td>55%</td>
+<td>Declining</td>
+</tr>
+<tr>
+<td>Advanced EMS</td>
+<td>30%</td>
+<td>Growing</td>
+</tr>
+<tr>
+<td>AI/ML optimization</td>
+<td>10%</td>
+<td>Rapid growth</td>
+</tr>
+<tr>
+<td>Integrated platforms</td>
+<td>5%</td>
+<td>Emerging</td>
+</tr>
+</tbody>
+</table>
+<h3 id="installed-base-analysis">3.3 Installed Base Analysis</h3>
+<p><strong>Global Mini-grid Count</strong></p>
+<table>
+<thead>
+<tr>
+<th>Year</th>
+<th>Operational Mini-grids</th>
+<th>Annual Additions</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2020</td>
+<td>19,000</td>
+<td>—</td>
+</tr>
+<tr>
+<td>2021</td>
+<td>21,500</td>
+<td>2,500</td>
+</tr>
+<tr>
+<td>2022</td>
+<td>25,000</td>
+<td>3,500</td>
+</tr>
+<tr>
+<td>2023</td>
+<td>29,000</td>
+<td>4,000</td>
+</tr>
+<tr>
+<td>2024</td>
+<td>34,000</td>
+<td>5,000</td>
+</tr>
+<tr>
+<td>2025</td>
+<td>40,000</td>
+<td>6,000</td>
+</tr>
+<tr>
+<td>2030 (proj)</td>
+<td>200,000+</td>
+<td>32,000+</td>
+</tr>
+</tbody>
+</table>
+<p><em>Source: ESMAP, BloombergNEF, Mini-Grids Partnership</em></p>
+<p><strong>Software Penetration Rate</strong></p>
+<table>
+<thead>
+<tr>
+<th>Category</th>
+<th>Current (2025)</th>
+<th>Projected (2030)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Basic monitoring</td>
+<td>60%</td>
+<td>95%</td>
+</tr>
+<tr>
+<td>Remote control</td>
+<td>35%</td>
+<td>80%</td>
+</tr>
+<tr>
+<td>Advanced EMS</td>
+<td>15%</td>
+<td>55%</td>
+</tr>
+<tr>
+<td>AI optimization</td>
+<td>3%</td>
+<td>25%</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Key Insight:</strong> The gap between “basic monitoring”
+(60%) and “AI optimization” (3%) represents KORA’s opportunity—sites
+that have connectivity but lack intelligent control.</p>
+<hr />
+<h2 id="regional-market-deep-dives">4. Regional Market Deep-Dives</h2>
+<h3 id="sub-saharan-africa">4.1 Sub-Saharan Africa</h3>
+<p><strong>Overview:</strong> - Population without electricity: 600
+million - Mini-grids operational: 5,000+ (2025) - Mini-grids planned:
+25,000+ by 2030 - Total investment needed: €120 billion by 2030</p>
+<p><strong>Country Breakdown:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Country</th>
+<th>Mini-grids (2025)</th>
+<th>Projected (2030)</th>
+<th>Key Players</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Kenya</td>
+<td>450</td>
+<td>1,500</td>
+<td>PowerGen, SteamaCo, E.ON</td>
+</tr>
+<tr>
+<td>Tanzania</td>
+<td>380</td>
+<td>1,200</td>
+<td>PowerGen, Jumeme</td>
+</tr>
+<tr>
+<td>Nigeria</td>
+<td>350</td>
+<td>2,500</td>
+<td>Husk Power, Arnergy</td>
+</tr>
+<tr>
+<td>Madagascar</td>
+<td>120</td>
+<td>400</td>
+<td>Africa GreenTec, Jirama</td>
+</tr>
+<tr>
+<td>Rwanda</td>
+<td>95</td>
+<td>350</td>
+<td>BBOXX, Ignite Power</td>
+</tr>
+<tr>
+<td>Uganda</td>
+<td>85</td>
+<td>300</td>
+<td>Equatorial Power</td>
+</tr>
+<tr>
+<td>Senegal</td>
+<td>75</td>
+<td>280</td>
+<td>ERA, Oolu Solar</td>
+</tr>
+<tr>
+<td>DRC</td>
+<td>60</td>
+<td>500</td>
+<td>Nuru, Virunga Power</td>
+</tr>
+<tr>
+<td>Other</td>
+<td>1,385</td>
+<td>5,000+</td>
+<td>Various</td>
+</tr>
+<tr>
+<td><strong>Total</strong></td>
+<td><strong>3,000+</strong></td>
+<td><strong>12,000+</strong></td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Market Characteristics:</strong> - Highest curtailment rates
+globally (50-80%) - Donor/development finance dominant (60% of funding)
+- Mobile money integration critical - Challenging connectivity (4G
+patchy, satellite needed) - Price sensitivity high (ability to pay
+limited)</p>
+<p><strong>Market Size (Software):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Year</th>
+<th>Market (€M)</th>
+<th>Growth</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2024</td>
+<td>45</td>
+<td>—</td>
+</tr>
+<tr>
+<td>2025</td>
+<td>72</td>
+<td>60%</td>
+</tr>
+<tr>
+<td>2026</td>
+<td>115</td>
+<td>60%</td>
+</tr>
+<tr>
+<td>2027</td>
+<td>175</td>
+<td>52%</td>
+</tr>
+<tr>
+<td>2028</td>
+<td>260</td>
+<td>49%</td>
+</tr>
+</tbody>
+</table>
+<p><strong>KORA’s Addressable Market:</strong> €25M (2026) → €115M
+(2028)</p>
+<h3 id="south-southeast-asia">4.2 South &amp; Southeast Asia</h3>
+<p><strong>Overview:</strong> - Mini-grids operational: 8,000+ (India
+alone: 4,500+) - Rapid growth in Indonesia, Philippines, Myanmar - Mix
+of community and commercial models</p>
+<p><strong>Country Breakdown:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Country</th>
+<th>Mini-grids (2025)</th>
+<th>Key Characteristics</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>India</td>
+<td>4,500+</td>
+<td>Largest market, government programs</td>
+</tr>
+<tr>
+<td>Indonesia</td>
+<td>1,200+</td>
+<td>Island archipelago, PLN utility role</td>
+</tr>
+<tr>
+<td>Philippines</td>
+<td>800+</td>
+<td>Island grids, high LCOE</td>
+</tr>
+<tr>
+<td>Bangladesh</td>
+<td>600+</td>
+<td>Dense population, SHS transitioning</td>
+</tr>
+<tr>
+<td>Myanmar</td>
+<td>300+</td>
+<td>Post-conflict development</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Market Characteristics:</strong> - More sophisticated
+operators (larger portfolios) - Grid interconnection increasingly common
+- Competition from grid extension - Lower curtailment than Africa
+(30-50%) - Higher willingness to pay for software</p>
+<p><strong>Market Size (Software):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Year</th>
+<th>Market (€M)</th>
+<th>Growth</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2024</td>
+<td>95</td>
+<td>—</td>
+</tr>
+<tr>
+<td>2025</td>
+<td>135</td>
+<td>42%</td>
+</tr>
+<tr>
+<td>2026</td>
+<td>190</td>
+<td>41%</td>
+</tr>
+<tr>
+<td>2027</td>
+<td>260</td>
+<td>37%</td>
+</tr>
+<tr>
+<td>2028</td>
+<td>350</td>
+<td>35%</td>
+</tr>
+</tbody>
+</table>
+<h3 id="latin-america-caribbean">4.3 Latin America &amp; Caribbean</h3>
+<p><strong>Overview:</strong> - Island nations with high electricity
+costs (Caribbean) - Remote Amazon communities (Brazil, Peru, Colombia) -
+Growing off-grid solar for mining and agriculture</p>
+<p><strong>Key Markets:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Country/Region</th>
+<th>Mini-grids</th>
+<th>Characteristics</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Caribbean Islands</td>
+<td>200+</td>
+<td>High LCOE ($0.30-0.50/kWh), tourism</td>
+</tr>
+<tr>
+<td>Brazil (Amazon)</td>
+<td>400+</td>
+<td>Remote communities, diesel displacement</td>
+</tr>
+<tr>
+<td>Colombia</td>
+<td>150+</td>
+<td>Post-conflict rural development</td>
+</tr>
+<tr>
+<td>Peru</td>
+<td>200+</td>
+<td>Mining + rural electrification</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Market Size (Software):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Year</th>
+<th>Market (€M)</th>
+<th>Growth</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2025</td>
+<td>55</td>
+<td>—</td>
+</tr>
+<tr>
+<td>2028</td>
+<td>120</td>
+<td>30% CAGR</td>
+</tr>
+</tbody>
+</table>
+<h3 id="island-nations-remote-communities">4.4 Island Nations &amp;
+Remote Communities</h3>
+<p><strong>Overview:</strong> - Highest electricity costs globally
+($0.35-0.80/kWh) - Strong economic case for renewables - Grid stability
+challenges - Sophisticated utility operators</p>
+<p><strong>Key Markets:</strong></p>
+<table>
+<colgroup>
+<col style="width: 21%" />
+<col style="width: 45%" />
+<col style="width: 32%" />
+</colgroup>
+<thead>
+<tr>
+<th>Region</th>
+<th>Characteristics</th>
+<th>LCOE Range</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Pacific Islands</td>
+<td>Diesel dependent, climate vulnerable</td>
+<td>$0.40-0.80/kWh</td>
+</tr>
+<tr>
+<td>Mediterranean Islands</td>
+<td>Tourism peaks, EU standards</td>
+<td>$0.25-0.45/kWh</td>
+</tr>
+<tr>
+<td>Remote Arctic</td>
+<td>Mining, research, military</td>
+<td>$0.50-1.00/kWh</td>
+</tr>
+<tr>
+<td>Indian Ocean</td>
+<td>Tourism, agriculture</td>
+<td>$0.30-0.55/kWh</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Market Size (Software):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Year</th>
+<th>Market (€M)</th>
+<th>Growth</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2025</td>
+<td>40</td>
+<td>—</td>
+</tr>
+<tr>
+<td>2028</td>
+<td>75</td>
+<td>23% CAGR</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="market-drivers-trends">5. Market Drivers &amp; Trends</h2>
+<h3 id="primary-market-drivers">5.1 Primary Market Drivers</h3>
+<p><strong>1. Declining Renewable + Storage Costs</strong></p>
+<table>
+<thead>
+<tr>
+<th>Technology</th>
+<th>2015 Cost</th>
+<th>2025 Cost</th>
+<th>Change</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Solar PV</td>
+<td>$0.30/W</td>
+<td>$0.18/W</td>
+<td>-40%</td>
+</tr>
+<tr>
+<td>Li-ion batteries</td>
+<td>$400/kWh</td>
+<td>$130/kWh</td>
+<td>-68%</td>
+</tr>
+<tr>
+<td>Wind (small)</td>
+<td>$0.25/W</td>
+<td>$0.15/W</td>
+<td>-40%</td>
+</tr>
+</tbody>
+</table>
+<p><em>Lower hardware costs → more mini-grids → more software
+demand</em></p>
+<p><strong>2. Energy Access Mandates</strong></p>
+<table>
+<thead>
+<tr>
+<th>Initiative</th>
+<th>Target</th>
+<th>Investment</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>UN SDG 7</td>
+<td>Universal access by 2030</td>
+<td>$50B/year</td>
+</tr>
+<tr>
+<td>African Union Agenda 2063</td>
+<td>Modern energy for all</td>
+<td>€120B by 2030</td>
+</tr>
+<tr>
+<td>India Saubhagya</td>
+<td>100% electrification</td>
+<td>$2.5B allocated</td>
+</tr>
+<tr>
+<td>Indonesia PLN</td>
+<td>Universal access by 2024</td>
+<td>$4.5B</td>
+</tr>
+</tbody>
+</table>
+<p><strong>3. Climate Finance Growth</strong></p>
+<table>
+<thead>
+<tr>
+<th>Fund/Initiative</th>
+<th>Mini-grid Allocation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Green Climate Fund</td>
+<td>$800M+ to date</td>
+</tr>
+<tr>
+<td>World Bank ESMAP</td>
+<td>$500M mini-grid program</td>
+</tr>
+<tr>
+<td>EU Global Gateway</td>
+<td>€150B Africa infrastructure</td>
+</tr>
+<tr>
+<td>AfDB Desert to Power</td>
+<td>$20B Sahel solar</td>
+</tr>
+</tbody>
+</table>
+<p><strong>4. Grid Instability &amp; Blackouts</strong></p>
+<ul>
+<li>South Africa: 200+ days of load-shedding (2023)</li>
+<li>Nigeria: &lt;4 hours average grid supply in rural areas</li>
+<li>India: 6% distribution losses, frequent outages</li>
+<li>Result: C&amp;I customers investing in backup/independence</li>
+</ul>
+<p><strong>5. Digital Infrastructure Expansion</strong></p>
+<ul>
+<li>4G coverage in Africa: 50% (2020) → 75% (2025)</li>
+<li>Satellite internet (Starlink, OneWeb) reaching remote areas</li>
+<li>Mobile money users: 500M+ in Africa</li>
+<li>Enables: Remote monitoring, automated billing, cloud
+optimization</li>
+</ul>
+<h3 id="key-market-trends">5.2 Key Market Trends</h3>
+<p><strong>Trend 1: Shift from “Electrification” to
+“Optimization”</strong></p>
+<p>Early mini-grid deployments focused on basic access. As the sector
+matures, operators recognize that: - Curtailment is the primary economic
+challenge - Revenue optimization is key to sustainability - Software
+creates differentiation in commoditized hardware</p>
+<p><strong>Trend 2: Consolidation Among Operators</strong></p>
+<table>
+<thead>
+<tr>
+<th>Year</th>
+<th>Top 10 Developers’ Share</th>
+<th>Trend</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2020</td>
+<td>25%</td>
+<td>Fragmented</td>
+</tr>
+<tr>
+<td>2023</td>
+<td>40%</td>
+<td>Consolidating</td>
+</tr>
+<tr>
+<td>2026</td>
+<td>55%+</td>
+<td>Concentrated</td>
+</tr>
+</tbody>
+</table>
+<p><em>Implication: Fewer, larger customers with sophisticated needs →
+enterprise sales motion</em></p>
+<p><strong>Trend 3: Hybrid AC/DC Systems</strong></p>
+<p>Traditional AC mini-grids being supplemented with DC microgrids for:
+- Electric vehicles (e-mobility) - Productive use (irrigation pumps,
+cold storage) - Data centers and telecom towers</p>
+<p><em>Implication: More complex optimization required</em></p>
+<p><strong>Trend 4: Grid Interconnection</strong></p>
+<p>Many mini-grids connecting to weak national grids: - Buy power when
+grid available/cheap - Sell back during outages - Provide grid
+stabilization services</p>
+<p><em>Implication: New revenue streams from grid services</em></p>
+<p><strong>Trend 5: Productive Use Focus</strong></p>
+<p>Donors and investors increasingly require: - Support for
+income-generating activities - Agricultural processing (milling, cold
+chain) - Manufacturing (welding, workshops) - Commercial services
+(internet cafes, phone charging)</p>
+<p><em>Implication: Time-of-use pricing and load management
+critical</em></p>
+<h3 id="technology-trends">5.3 Technology Trends</h3>
+<table>
+<colgroup>
+<col style="width: 19%" />
+<col style="width: 36%" />
+<col style="width: 44%" />
+</colgroup>
+<thead>
+<tr>
+<th>Trend</th>
+<th>Description</th>
+<th>KORA Relevance</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>AI/ML adoption</td>
+<td>Predictive analytics mainstream</td>
+<td>Core differentiator</td>
+</tr>
+<tr>
+<td>Edge computing</td>
+<td>Local processing, reduced latency</td>
+<td>Architecture advantage</td>
+</tr>
+<tr>
+<td>Digital twins</td>
+<td>Virtual system modeling</td>
+<td>Simulation capability</td>
+</tr>
+<tr>
+<td>Blockchain</td>
+<td>P2P energy trading, carbon credits</td>
+<td>Future roadmap</td>
+</tr>
+<tr>
+<td>IoT proliferation</td>
+<td>Sensor density increasing</td>
+<td>More data for optimization</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="competitive-landscape">6. Competitive Landscape</h2>
+<h3 id="market-structure">6.1 Market Structure</h3>
+<pre><code>                    COMPETITIVE LANDSCAPE MAP
+
+     High │
+          │    ○ AutoGrid        ○ Opus One
+   Price  │         ○ Schneider EcoStruxure
+   Point  │                   ○ ABB Microgrid+
+          │    ○ SparkMeter              ○ SteamaCo
+          │
+          │              ★ KORA Target Position
+          │
+          │    ○ Homer Pro    ○ Simple EMS
+     Low  │    ○ Basic SCADA
+          └────────────────────────────────────────
+               Low        Feature Sophistication       High</code></pre>
+<h3 id="competitor-analysis">6.2 Competitor Analysis</h3>
+<p><strong>Tier 1: Enterprise Solutions (Out of Segment)</strong></p>
+<table>
+<colgroup>
+<col style="width: 21%" />
+<col style="width: 23%" />
+<col style="width: 16%" />
+<col style="width: 39%" />
+</colgroup>
+<thead>
+<tr>
+<th>Competitor</th>
+<th>Description</th>
+<th>Pricing</th>
+<th>KORA Differentiation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>AutoGrid</strong></td>
+<td>VPP platform for utilities</td>
+<td>$100k+/year</td>
+<td>Too expensive, wrong segment</td>
+</tr>
+<tr>
+<td><strong>Opus One</strong></td>
+<td>DERMS for utilities</td>
+<td>$150k+/year</td>
+<td>Grid-scale focus, not microgrids</td>
+</tr>
+<tr>
+<td><strong>Schneider EcoStruxure</strong></td>
+<td>Integrated EMS</td>
+<td>Bundled with HW</td>
+<td>Hardware lock-in</td>
+</tr>
+<tr>
+<td><strong>ABB Microgrid+</strong></td>
+<td>Industrial microgrids</td>
+<td>$50k+/year</td>
+<td>Industrial focus, high touch</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Tier 2: Direct Competitors</strong></p>
+<table>
+<colgroup>
+<col style="width: 19%" />
+<col style="width: 20%" />
+<col style="width: 17%" />
+<col style="width: 19%" />
+<col style="width: 23%" />
+</colgroup>
+<thead>
+<tr>
+<th>Competitor</th>
+<th>Description</th>
+<th>Strengths</th>
+<th>Weaknesses</th>
+<th>KORA Position</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>SparkMeter</strong></td>
+<td>Smart metering + basic EMS</td>
+<td>Hardware integration, Africa presence</td>
+<td>Limited optimization, hardware-centric</td>
+<td>Software-only, deeper optimization</td>
+</tr>
+<tr>
+<td><strong>SteamaCo</strong> (Husk)</td>
+<td>Pay-as-you-go platform</td>
+<td>East Africa footprint, mobile money</td>
+<td>Acquired, less focused</td>
+<td>Independent, optimization-first</td>
+</tr>
+<tr>
+<td><strong>Odyssey Energy</strong></td>
+<td>Portfolio analytics</td>
+<td>Investor reporting, benchmarking</td>
+<td>No real-time optimization</td>
+<td>Real-time dispatch, demand response</td>
+</tr>
+<tr>
+<td><strong>Ferntech</strong></td>
+<td>Microgrid controller</td>
+<td>Hardware control, proven reliability</td>
+<td>Basic optimization</td>
+<td>AI-driven, hardware-agnostic</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Tier 3: Adjacent Solutions</strong></p>
+<table>
+<colgroup>
+<col style="width: 40%" />
+<col style="width: 27%" />
+<col style="width: 32%" />
+</colgroup>
+<thead>
+<tr>
+<th>Solution Type</th>
+<th>Examples</th>
+<th>Limitation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Planning tools</td>
+<td>Homer Pro, RetScreen</td>
+<td>Design-time only, not operational</td>
+</tr>
+<tr>
+<td>Basic SCADA</td>
+<td>Various OEMs</td>
+<td>Monitoring only, no optimization</td>
+</tr>
+<tr>
+<td>Custom solutions</td>
+<td>In-house development</td>
+<td>No scale, no ML, expensive</td>
+</tr>
+</tbody>
+</table>
+<h3 id="competitive-positioning">6.3 Competitive Positioning</h3>
+<p><strong>KORA’s Differentiation:</strong></p>
+<table>
+<colgroup>
+<col style="width: 30%" />
+<col style="width: 52%" />
+<col style="width: 16%" />
+</colgroup>
+<thead>
+<tr>
+<th>Dimension</th>
+<th>Typical Competitor</th>
+<th>KORA</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Optimization approach</td>
+<td>Rule-based heuristics</td>
+<td>Mathematical optimization (QP)</td>
+</tr>
+<tr>
+<td>Demand-side management</td>
+<td>Time-of-use (static)</td>
+<td>Dynamic pricing (real-time)</td>
+</tr>
+<tr>
+<td>Hardware dependency</td>
+<td>Often bundled</td>
+<td>Hardware-agnostic</td>
+</tr>
+<tr>
+<td>Connectivity requirement</td>
+<td>Always-on</td>
+<td>Edge-capable, offline resilient</td>
+</tr>
+<tr>
+<td>Target segment</td>
+<td>Utilities or SHS</td>
+<td>Mini-grids specifically</td>
+</tr>
+<tr>
+<td>Business model</td>
+<td>License or bundled</td>
+<td>SaaS + performance fee</td>
+</tr>
+<tr>
+<td>AI/ML capabilities</td>
+<td>Limited or none</td>
+<td>Core competency</td>
+</tr>
+</tbody>
+</table>
+<h3 id="barriers-to-entry">6.4 Barriers to Entry</h3>
+<table>
+<colgroup>
+<col style="width: 26%" />
+<col style="width: 23%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Barrier</th>
+<th>Height</th>
+<th>KORA’s Position</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Domain expertise (grid physics)</td>
+<td>High</td>
+<td>Strong (optimization background)</td>
+</tr>
+<tr>
+<td>Customer relationships</td>
+<td>Medium</td>
+<td>Building (AGT, PowerGen targets)</td>
+</tr>
+<tr>
+<td>Data for ML training</td>
+<td>Medium</td>
+<td>Accumulating via pilots</td>
+</tr>
+<tr>
+<td>Capital requirements</td>
+<td>Low-Medium</td>
+<td>Manageable for software</td>
+</tr>
+<tr>
+<td>Regulatory/certification</td>
+<td>Low</td>
+<td>Minimal for software layer</td>
+</tr>
+</tbody>
+</table>
+<h3 id="competitive-threats">6.5 Competitive Threats</h3>
+<p><strong>Threat 1: Hardware Vendors Adding Software</strong></p>
+<p>Risk: SMA, Victron, Schneider could bundle competitive optimization
+Mitigation: Hardware-agnostic positioning, deeper optimization, faster
+innovation</p>
+<p><strong>Threat 2: Utility DERMS Players Moving
+Down-Market</strong></p>
+<p>Risk: AutoGrid, Opus One could target mini-grids Mitigation:
+First-mover advantage, cost structure, segment expertise</p>
+<p><strong>Threat 3: Large Operators Building In-House</strong></p>
+<p>Risk: Engie, Husk build proprietary solutions Mitigation: Partnership
+model, demonstrate clear ROI, continuous innovation</p>
+<hr />
+<h2 id="customer-analysis">7. Customer Analysis</h2>
+<h3 id="customer-segmentation">7.1 Customer Segmentation</h3>
+<p><strong>Segment 1: Mini-grid Developers (Primary Target)</strong></p>
+<table>
+<colgroup>
+<col style="width: 55%" />
+<col style="width: 44%" />
+</colgroup>
+<thead>
+<tr>
+<th>Characteristic</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Profile</td>
+<td>Companies building and operating mini-grids</td>
+</tr>
+<tr>
+<td>Size</td>
+<td>10-500 sites</td>
+</tr>
+<tr>
+<td>Geography</td>
+<td>Africa, South Asia primarily</td>
+</tr>
+<tr>
+<td>Pain points</td>
+<td>Curtailment, unreliable revenue, operational complexity</td>
+</tr>
+<tr>
+<td>Decision maker</td>
+<td>CTO, VP Operations, Head of Technology</td>
+</tr>
+<tr>
+<td>Budget</td>
+<td>$300-1,000/site/month for software</td>
+</tr>
+<tr>
+<td>Examples</td>
+<td>Africa GreenTec, PowerGen, Husk Power, BBOXX</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Segment 2: Utilities with Mini-grids</strong></p>
+<table>
+<thead>
+<tr>
+<th>Characteristic</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Profile</td>
+<td>National utilities with off-grid/rural programs</td>
+</tr>
+<tr>
+<td>Size</td>
+<td>50-1,000+ sites</td>
+</tr>
+<tr>
+<td>Geography</td>
+<td>Global</td>
+</tr>
+<tr>
+<td>Pain points</td>
+<td>Efficiency mandates, subsidy optimization</td>
+</tr>
+<tr>
+<td>Decision maker</td>
+<td>Director of Off-Grid, Chief Digital Officer</td>
+</tr>
+<tr>
+<td>Budget</td>
+<td>Enterprise contracts ($15k-50k/year)</td>
+</tr>
+<tr>
+<td>Examples</td>
+<td>TANESCO (Tanzania), PLN (Indonesia), JIRAMA (Madagascar)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Segment 3: C&amp;I Off-Grid</strong></p>
+<table>
+<thead>
+<tr>
+<th>Characteristic</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Profile</td>
+<td>Businesses with captive solar+storage</td>
+</tr>
+<tr>
+<td>Size</td>
+<td>Single large site or small portfolio</td>
+</tr>
+<tr>
+<td>Geography</td>
+<td>Global (emerging markets concentrated)</td>
+</tr>
+<tr>
+<td>Pain points</td>
+<td>Diesel displacement, grid instability</td>
+</tr>
+<tr>
+<td>Decision maker</td>
+<td>Facilities Manager, CFO</td>
+</tr>
+<tr>
+<td>Budget</td>
+<td>$500-2,000/site/month</td>
+</tr>
+<tr>
+<td>Examples</td>
+<td>Telecom towers, mining operations, hotels</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Segment 4: Island Utilities</strong></p>
+<table>
+<thead>
+<tr>
+<th>Characteristic</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Profile</td>
+<td>Utility serving isolated island grid</td>
+</tr>
+<tr>
+<td>Size</td>
+<td>1-10 interconnected systems</td>
+</tr>
+<tr>
+<td>Geography</td>
+<td>Caribbean, Pacific, Mediterranean</td>
+</tr>
+<tr>
+<td>Pain points</td>
+<td>High LCOE, renewable integration</td>
+</tr>
+<tr>
+<td>Decision maker</td>
+<td>CEO, Technical Director</td>
+</tr>
+<tr>
+<td>Budget</td>
+<td>Enterprise contracts</td>
+</tr>
+<tr>
+<td>Examples</td>
+<td>Caribbean Utilities Co., BELCO (Bermuda)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="customer-pain-points">7.2 Customer Pain Points</h3>
+<p><strong>Ranked by severity (from customer interviews and industry
+research):</strong></p>
+<table>
+<colgroup>
+<col style="width: 13%" />
+<col style="width: 27%" />
+<col style="width: 23%" />
+<col style="width: 34%" />
+</colgroup>
+<thead>
+<tr>
+<th>Rank</th>
+<th>Pain Point</th>
+<th>Severity</th>
+<th>KORA Solution</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>High curtailment (wasted solar)</td>
+<td>Critical</td>
+<td>Real-time optimization</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Unpredictable revenue</td>
+<td>Critical</td>
+<td>Demand response, forecasting</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Evening blackouts</td>
+<td>High</td>
+<td>Smart battery dispatch</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Manual pricing decisions</td>
+<td>High</td>
+<td>Automated dynamic pricing</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Lack of visibility across portfolio</td>
+<td>Medium</td>
+<td>Multi-site dashboard</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Customer complaints</td>
+<td>Medium</td>
+<td>Service quality improvement</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Equipment failures</td>
+<td>Medium</td>
+<td>Predictive maintenance (roadmap)</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Reporting to investors</td>
+<td>Low</td>
+<td>Automated reporting</td>
+</tr>
+</tbody>
+</table>
+<h3 id="buying-process">7.3 Buying Process</h3>
+<p><strong>Typical Sales Cycle: 3-6 months</strong></p>
+<table>
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 22%" />
+<col style="width: 27%" />
+<col style="width: 34%" />
+</colgroup>
+<thead>
+<tr>
+<th>Stage</th>
+<th>Duration</th>
+<th>Activities</th>
+<th>KORA Approach</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Awareness</td>
+<td>1-2 months</td>
+<td>Content, conferences, referrals</td>
+<td>Thought leadership, case studies</td>
+</tr>
+<tr>
+<td>Consideration</td>
+<td>1-2 months</td>
+<td>Demo, technical evaluation</td>
+<td>Live demo with their data</td>
+</tr>
+<tr>
+<td>Pilot</td>
+<td>1 month</td>
+<td>Free trial on 1-2 sites</td>
+<td>30-day free pilot</td>
+</tr>
+<tr>
+<td>Decision</td>
+<td>1 month</td>
+<td>Contract negotiation</td>
+<td>Performance guarantees</td>
+</tr>
+<tr>
+<td>Expansion</td>
+<td>Ongoing</td>
+<td>Rollout to full portfolio</td>
+<td>Quarterly business reviews</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Key Decision Factors:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Factor</th>
+<th>Weight</th>
+<th>KORA Strength</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Demonstrated ROI</td>
+<td>35%</td>
+<td>Strong (3x revenue proven)</td>
+</tr>
+<tr>
+<td>Technical fit (integrations)</td>
+<td>25%</td>
+<td>Strong (hardware-agnostic)</td>
+</tr>
+<tr>
+<td>Price</td>
+<td>20%</td>
+<td>Competitive</td>
+</tr>
+<tr>
+<td>Team/support</td>
+<td>15%</td>
+<td>Building</td>
+</tr>
+<tr>
+<td>Reference customers</td>
+<td>5%</td>
+<td>Building (AGT pilot)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="willingness-to-pay-analysis">7.4 Willingness to Pay
+Analysis</h3>
+<p><strong>Value-Based Pricing Framework:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Site Revenue</th>
+<th>KORA Value Add</th>
+<th>Customer WTP</th>
+<th>KORA Price</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$1,500/month</td>
+<td>+$3,000/month</td>
+<td>$600-900</td>
+<td>$400-500</td>
+</tr>
+<tr>
+<td>$3,000/month</td>
+<td>+$6,000/month</td>
+<td>$1,200-1,800</td>
+<td>$500-600</td>
+</tr>
+<tr>
+<td>$5,000/month</td>
+<td>+$10,000/month</td>
+<td>$2,000-3,000</td>
+<td>$800-1,200</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Pricing at 10-15% of value created ensures clear
+ROI</strong></p>
+<hr />
+<h2 id="market-entry-strategy">8. Market Entry Strategy</h2>
+<h3 id="geographic-prioritization">8.1 Geographic Prioritization</h3>
+<p><strong>Criteria for market selection:</strong> 1. Market size
+(number of mini-grids) 2. Curtailment severity (addressable pain) 3.
+Connectivity infrastructure 4. Regulatory environment 5. Payment
+infrastructure (mobile money) 6. Partnership availability</p>
+<p><strong>Market Priority Matrix:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Market</th>
+<th>Size</th>
+<th>Pain</th>
+<th>Infrastructure</th>
+<th>Score</th>
+<th>Priority</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Kenya</td>
+<td>8</td>
+<td>9</td>
+<td>8</td>
+<td>25</td>
+<td><strong>1</strong></td>
+</tr>
+<tr>
+<td>Madagascar</td>
+<td>6</td>
+<td>10</td>
+<td>6</td>
+<td>22</td>
+<td><strong>2</strong></td>
+</tr>
+<tr>
+<td>Nigeria</td>
+<td>10</td>
+<td>8</td>
+<td>7</td>
+<td>25</td>
+<td><strong>3</strong></td>
+</tr>
+<tr>
+<td>Tanzania</td>
+<td>7</td>
+<td>8</td>
+<td>7</td>
+<td>22</td>
+<td><strong>4</strong></td>
+</tr>
+<tr>
+<td>Rwanda</td>
+<td>5</td>
+<td>7</td>
+<td>9</td>
+<td>21</td>
+<td><strong>5</strong></td>
+</tr>
+<tr>
+<td>India</td>
+<td>10</td>
+<td>6</td>
+<td>9</td>
+<td>25</td>
+<td><strong>6</strong></td>
+</tr>
+</tbody>
+</table>
+<h3 id="entry-sequence">8.2 Entry Sequence</h3>
+<p><strong>Phase 1: Beachhead (2026)</strong> - Madagascar: Africa
+GreenTec anchor partnership - Kenya: PowerGen target, M-Pesa integration
+- 3-5 reference customers</p>
+<p><strong>Phase 2: Regional Scale (2027)</strong> - Tanzania, Rwanda,
+Uganda: East Africa expansion - Nigeria: West Africa entry (largest
+market) - 25+ customers</p>
+<p><strong>Phase 3: Continental Presence (2028)</strong> - Full
+Pan-African coverage - India market entry - 100+ customers</p>
+<h3 id="go-to-market-model">8.3 Go-to-Market Model</h3>
+<p><strong>Direct Sales (60% of revenue)</strong> - Outbound to
+developers with 10+ sites - Conference presence (AMDA, ARE, GOGLA) -
+Content marketing (case studies, ROI calculators)</p>
+<p><strong>Channel Partnerships (25% of revenue)</strong> - Hardware
+distributors (Victron, SMA) - Project developers (Engie, EDF, Enel) -
+Equipment bundling and referrals</p>
+<p><strong>Investor Mandates (15% of revenue)</strong> - Financiers
+require KORA for portfolio companies - SunFunder, Norfund, FMO, IFC
+partnerships</p>
+<h3 id="pricing-strategy">8.4 Pricing Strategy</h3>
+<p><strong>Tiered SaaS Model:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Tier</th>
+<th>Monthly</th>
+<th>Annual (15% off)</th>
+<th>Target Customer</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Core</td>
+<td>€275/site</td>
+<td>€2,805/site</td>
+<td>Smaller developers</td>
+</tr>
+<tr>
+<td>Pro</td>
+<td>€450/site</td>
+<td>€4,590/site</td>
+<td>Mid-market</td>
+</tr>
+<tr>
+<td>Enterprise</td>
+<td>€1,350/site</td>
+<td>Custom</td>
+<td>Large portfolios</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Volume Discounts:</strong> - 5+ sites: 10% off - 10+ sites:
+20% off - 25+ sites: Custom negotiation</p>
+<p><strong>Performance Fee Option:</strong> - €0.01-0.02 per additional
+kWh sold - Alternative or supplement to subscription - Aligns
+incentives, reduces adoption friction</p>
+<hr />
+<h2 id="market-projections">9. Market Projections</h2>
+<h3 id="koras-addressable-market-evolution">9.1 KORA’s Addressable
+Market Evolution</h3>
+<table>
+<thead>
+<tr>
+<th>Year</th>
+<th>TAM (Global)</th>
+<th>SAM (Africa)</th>
+<th>SOM (Target)</th>
+<th>KORA Revenue</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2025</td>
+<td>€2.2B</td>
+<td>€72M</td>
+<td>€25M</td>
+<td>—</td>
+</tr>
+<tr>
+<td>2026</td>
+<td>€3.0B</td>
+<td>€115M</td>
+<td>€40M</td>
+<td>€162k</td>
+</tr>
+<tr>
+<td>2027</td>
+<td>€4.0B</td>
+<td>€175M</td>
+<td>€60M</td>
+<td>€540k</td>
+</tr>
+<tr>
+<td>2028</td>
+<td>€5.2B</td>
+<td>€260M</td>
+<td>€90M</td>
+<td>€2.16M</td>
+</tr>
+<tr>
+<td>2029</td>
+<td>€6.5B</td>
+<td>€380M</td>
+<td>€130M</td>
+<td>€5.4M</td>
+</tr>
+<tr>
+<td>2030</td>
+<td>€8.0B</td>
+<td>€550M</td>
+<td>€180M</td>
+<td>€13.5M</td>
+</tr>
+</tbody>
+</table>
+<h3 id="market-share-projections">9.2 Market Share Projections</h3>
+<table>
+<thead>
+<tr>
+<th>Year</th>
+<th>Target Market</th>
+<th>KORA Sites</th>
+<th>Market Share</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2026</td>
+<td>500 addressable</td>
+<td>11</td>
+<td>2.2%</td>
+</tr>
+<tr>
+<td>2027</td>
+<td>750 addressable</td>
+<td>50</td>
+<td>6.7%</td>
+</tr>
+<tr>
+<td>2028</td>
+<td>1,200 addressable</td>
+<td>180</td>
+<td>15.0%</td>
+</tr>
+<tr>
+<td>2029</td>
+<td>2,000 addressable</td>
+<td>400</td>
+<td>20.0%</td>
+</tr>
+<tr>
+<td>2030</td>
+<td>3,000 addressable</td>
+<td>750</td>
+<td>25.0%</td>
+</tr>
+</tbody>
+</table>
+<h3 id="scenario-analysis">9.3 Scenario Analysis</h3>
+<p><strong>Conservative Case:</strong> - Slower adoption, 50% of base
+projections - 2030: €6.75M revenue, 375 sites</p>
+<p><strong>Base Case:</strong> - As projected above - 2030: €13.5M
+revenue, 750 sites</p>
+<p><strong>Optimistic Case:</strong> - Faster adoption, expansion to
+C&amp;I and islands - 2030: €25M revenue, 1,200 sites</p>
+<hr />
+<h2 id="sources-methodology">10. Sources &amp; Methodology</h2>
+<h3 id="primary-sources">10.1 Primary Sources</h3>
+<ul>
+<li>Customer interviews (Africa GreenTec, 3 other operators)</li>
+<li>Industry expert consultations</li>
+<li>Conference attendance (AMDA Summit, ARE Forum)</li>
+<li>UCSD DERConnect research partnership</li>
+</ul>
+<h3 id="secondary-sources">10.2 Secondary Sources</h3>
+<p><strong>Market Research:</strong> - BloombergNEF: Global Energy
+Storage Outlook - IEA: Africa Energy Outlook - Wood Mackenzie:
+Distributed Energy Resources - Guidehouse Insights: Microgrid Market
+Analysis - McKinsey: Powering Africa report</p>
+<p><strong>Industry Reports:</strong> - ESMAP: Mini-Grids for Half a
+Billion People - AMDA: State of the Global Mini-grid Market - Rocky
+Mountain Institute: Minigrids in the Money - SEforALL: Energizing
+Finance</p>
+<p><strong>Academic Research:</strong> - MIT Energy Initiative:
+Microgrid optimization literature - NREL: Techno-economic analysis
+papers - IEEE: Smart grid journal articles</p>
+<h3 id="methodology">10.3 Methodology</h3>
+<p><strong>Market Sizing:</strong> - Bottom-up: Site counts × software
+ARPU - Top-down: Total market × segment share - Cross-validated with
+industry experts</p>
+<p><strong>Growth Projections:</strong> - Historical growth rates
+(2020-2025) - Policy target analysis (SDG 7, national plans) -
+Investment pipeline review</p>
+<p><strong>Competitive Analysis:</strong> - Public company filings and
+announcements - Product demonstrations and trials - Customer feedback
+and win/loss analysis</p>
+<hr />
+<h2 id="appendices">Appendices</h2>
+<p><strong>Appendix A:</strong> Country-level market data tables
+<strong>Appendix B:</strong> Competitor product comparison matrix
+<strong>Appendix C:</strong> Customer interview summaries
+<strong>Appendix D:</strong> Academic and industry source
+bibliography</p>
+<hr />
+<p><em>Document Version: 1.0</em> <em>Date: April 2026</em>
+<em>Classification: Confidential - For EU Innovation Fund Application
+Only</em></p>
+</body>
+</html>

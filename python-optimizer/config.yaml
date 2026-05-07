@@ -1,0 +1,60 @@
+# KORA Configuration - Mahavelona Pilot Site
+# Africa GreenTec, Madagascar
+
+site_id: "mahavelona"
+site_name: "Mahavelona Pilot"
+location: "Itasy Region, Madagascar"
+timezone: "Indian/Antananarivo"
+
+# Battery Energy Storage System
+battery:
+  capacity_kwh: 115
+  power_kw: 54
+  soc_min_percent: 20
+  soc_max_percent: 95
+  efficiency_charge: 0.94
+  efficiency_discharge: 0.94
+  cycle_cost_per_kwh: 0.01
+
+# Solar PV Array
+solar:
+  capacity_kw: 118.5
+  daily_production_kwh: 548
+
+# Dynamic Pricing (Ariary)
+pricing:
+  min_price: 1000
+  max_price: 2500
+  reference_price: 1750
+  currency: "MGA"
+  currency_symbol: "Ar"
+
+# Demand Response
+demand:
+  elasticity: 0.6
+  peak_load_kw: 53
+  base_load_kw: 8
+
+# Grid (off-grid site)
+grid:
+  connected: false
+
+# Optimizer Settings
+optimizer:
+  horizon_hours: 24
+  timestep_hours: 1.0
+  solver: "appsi_highs"  # Python highspy interface, no binary needed
+  time_limit_sec: 60
+  curtailment_penalty: 1500
+  blackout_penalty: 5000
+
+# Telemetry (for real deployment)
+telemetry:
+  api_url: "http://localhost:4000"
+  poll_interval_sec: 5
+
+# Alerts
+alerts:
+  alert_on_solver_failure: true
+  alert_on_high_curtailment: true
+  curtailment_threshold_percent: 20

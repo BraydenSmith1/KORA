@@ -1,0 +1,97 @@
+# KORA Production Environment Override
+# =====================================
+# Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# Production-specific settings:
+# - Optimized for reliability
+# - Strict resource limits
+# - Production logging (JSON)
+# - Health checks
+# - Auto-restart policies
+
+services:
+  db:
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          memory: 1G
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "5"
+
+  api:
+    image: ghcr.io/${GITHUB_REPOSITORY:-kora}/api:latest
+    environment:
+      NODE_ENV: production
+      LOG_LEVEL: info
+      AXIOM_DATASET: kora-production-logs
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 1G
+        reservations:
+          memory: 512M
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "10"
+
+  optimizer:
+    image: ghcr.io/${GITHUB_REPOSITORY:-kora}/optimizer:latest
+    environment:
+      KORA_LOG_LEVEL: INFO
+      KORA_CACHE_ENABLED: "true"
+    command: ["--config", "/app/sites/mahavelona.yaml", "--json-logs", "--interval", "15"]
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 4G
+        reservations:
+          memory: 2G
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 3
+        window: 300s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "10"
+
+  web:
+    image: ghcr.io/${GITHUB_REPOSITORY:-kora}/web:latest
+    profiles: []  # Always include
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 256M
+        reservations:
+          memory: 128M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+  caddy:
+    profiles: []  # Always include caddy in production
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"

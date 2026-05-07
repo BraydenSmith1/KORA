@@ -1,0 +1,47 @@
+# KORA Staging Environment Override
+# ==================================
+# Usage: docker compose -f docker-compose.yml -f docker-compose.staging.yml up -d
+#
+# Staging-specific settings:
+# - Pre-production testing
+# - Debug logging enabled
+# - Relaxed resource limits
+# - Test data seeding
+
+services:
+  api:
+    image: ghcr.io/${GITHUB_REPOSITORY:-kora}/api:latest
+    environment:
+      NODE_ENV: staging
+      LOG_LEVEL: debug
+      AXIOM_DATASET: kora-staging-logs
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          memory: 256M
+
+  optimizer:
+    image: ghcr.io/${GITHUB_REPOSITORY:-kora}/optimizer:latest
+    environment:
+      KORA_LOG_LEVEL: DEBUG
+      KORA_CACHE_ENABLED: "true"
+    command: ["--config", "/app/sites/mahavelona.yaml", "--json-logs", "--interval", "5"]
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 1G
+        reservations:
+          memory: 512M
+
+  web:
+    image: ghcr.io/${GITHUB_REPOSITORY:-kora}/web:latest
+    profiles: []  # Always include
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 128M

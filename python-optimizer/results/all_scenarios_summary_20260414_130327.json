@@ -1,0 +1,128 @@
+[
+  {
+    "scenario": "baseline",
+    "name": "Baseline (Clear Day)",
+    "baseline_curtailment": 0.5521413872542474,
+    "optimized_curtailment": 0.5215108387710009,
+    "curtailment_reduction": 5.547591466665751,
+    "revenue_increase": 76.49351312159659,
+    "solve_time": 0.05659890174865723
+  },
+  {
+    "scenario": "cloudy",
+    "name": "Cloudy Day",
+    "baseline_curtailment": 0.0,
+    "optimized_curtailment": 0.0,
+    "curtailment_reduction": 0,
+    "revenue_increase": 243.76251990240382,
+    "solve_time": 0.006950855255126953
+  },
+  {
+    "scenario": "partly_cloudy",
+    "name": "Partly Cloudy",
+    "baseline_curtailment": 0.3919021720193271,
+    "optimized_curtailment": 0.3610853086799547,
+    "curtailment_reduction": 7.863407130556201,
+    "revenue_increase": 84.69431069757493,
+    "solve_time": 0.05117678642272949
+  },
+  {
+    "scenario": "wet_season",
+    "name": "Wet Season",
+    "baseline_curtailment": 0.22669296766138478,
+    "optimized_curtailment": 0.20113022145079948,
+    "curtailment_reduction": 11.276373711234314,
+    "revenue_increase": 95.19905359443302,
+    "solve_time": 0.06787800788879395
+  },
+  {
+    "scenario": "weekend",
+    "name": "Weekend",
+    "baseline_curtailment": 0.6247788230609572,
+    "optimized_curtailment": 0.5876728577219446,
+    "curtailment_reduction": 5.939056185870817,
+    "revenue_increase": 56.579436618583856,
+    "solve_time": 0.01855611801147461
+  },
+  {
+    "scenario": "high_demand",
+    "name": "High Demand Day",
+    "baseline_curtailment": 0.46654046346258926,
+    "optimized_curtailment": 0.42471171218613823,
+    "curtailment_reduction": 8.965728495660306,
+    "revenue_increase": 91.83657481696427,
+    "solve_time": 0.025328874588012695
+  },
+  {
+    "scenario": "low_elasticity",
+    "name": "Low Price Sensitivity",
+    "baseline_curtailment": 0.5521413872542474,
+    "optimized_curtailment": 0.5753695363576525,
+    "curtailment_reduction": -4.2069204808059615,
+    "revenue_increase": 114.94157997834715,
+    "solve_time": 0.01668405532836914
+  },
+  {
+    "scenario": "high_elasticity",
+    "name": "High Price Sensitivity",
+    "baseline_curtailment": 0.5521413872542474,
+    "optimized_curtailment": 0.4637135421994385,
+    "curtailment_reduction": 16.01543501286023,
+    "revenue_increase": 57.151606567335975,
+    "solve_time": 0.030704259872436523
+  },
+  {
+    "scenario": "battery_degraded",
+    "name": "Degraded Battery",
+    "baseline_curtailment": 0.5834024649883254,
+    "optimized_curtailment": 0.5621225563175246,
+    "curtailment_reduction": 3.647552067032593,
+    "revenue_increase": 91.19565636452063,
+    "solve_time": 0.013365983963012695
+  },
+  {
+    "scenario": "narrow_price_band",
+    "name": "Narrow Price Band",
+    "baseline_curtailment": 0.5521413872542474,
+    "optimized_curtailment": 0.5220648597323808,
+    "curtailment_reduction": 5.447251051299498,
+    "revenue_increase": 74.83030711747298,
+    "solve_time": 0.01256108283996582
+  },
+  {
+    "scenario": "wide_price_band",
+    "name": "Wide Price Band",
+    "baseline_curtailment": 0.5521413872542474,
+    "optimized_curtailment": 0.5236434115898209,
+    "curtailment_reduction": 5.16135474034008,
+    "revenue_increase": 52.55437787068916,
+    "solve_time": 0.06227922439575195
+  },
+  {
+    "scenario": "low_battery",
+    "name": "Low Initial Battery",
+    "baseline_curtailment": 0.5521413872542474,
+    "optimized_curtailment": 0.5254149376266793,
+    "curtailment_reduction": 4.840508290906515,
+    "revenue_increase": 87.37716710679105,
+    "solve_time": 0.01329803466796875
+  },
+  {
+    "scenario": "full_battery",
+    "name": "Full Initial Battery",
+    "baseline_curtailment": 0.5521413872542474,
+    "optimized_curtailment": 0.5236427966000962,
+    "curtailment_reduction": 5.161466122992947,
+    "revenue_increase": 51.93422657548198,
+    "solve_time": 0.054621219635009766
+  },
+  {
+    "scenario": "stress_test",
+    "name": "Stress Test",
+    "baseline_curtailment": 0.0,
+    "optimized_curtailment": 0.0,
+    "curtailment_reduction": 0,
+    "revenue_increase": 383.009804049005,
+    "solve_time": 0.006554126739501953
+  }
+]

@@ -1,0 +1,3 @@
+[console_scripts]
+kora-service = kora.service:main
+kora-simulation = kora.simulation:main

@@ -1,0 +1,14 @@
+{
+  "host": "127.0.0.1",
+  "port": 502,
+  "poll_interval_s": 1.0,
+  "api_url": "http://localhost:3000/api/ingest",
+  "api_key": "OPTIONAL_TOKEN",
+  "registers": [
+    { "name": "grid_voltage_ll", "address": 0, "unit": 1, "scale": 0.1, "kind": "input" },
+    { "name": "grid_frequency_hz", "address": 1, "unit": 1, "scale": 0.01, "kind": "input" },
+    { "name": "pv_power_kw", "address": 2, "unit": 1, "scale": 0.1, "kind": "input" },
+    { "name": "battery_soc_pct", "address": 3, "unit": 1, "scale": 0.1, "kind": "holding" },
+    { "name": "load_kw", "address": 4, "unit": 1, "scale": 0.1, "kind": "input" }
+  ]
+}

@@ -1,12 +1,14 @@
 import 'dotenv/config'
 import express from 'express';
 import cors from 'cors';
-import morgan from 'morgan';
 import crypto from 'crypto';
+import logger from './lib/logger.js';
 import { PrismaClient } from '@prisma/client';
 import { z } from 'zod';
 import { PaymentsAdapter } from './adapters/payments.js';
 import { ChainAdapter } from './adapters/chain.js';
+import { mapTelemetryFrame, safeJson as safeJsonTelemetry, summarizeFrames, integrateTradeEnergy } from './logic/telemetry.js';
+import { getActiveSession as fetchActiveSession, presentSession, serializeThresholds } from './logic/session.js';
 
 const prisma = new PrismaClient();
 const pay = new PaymentsAdapter(prisma);
@@ -15,11 +17,61 @@ const chain = new ChainAdapter(prisma);
 const app = express();
 app.use(cors());
 app.use(express.json());
-app.use(morgan('dev'));
+app.use(logger.requestMiddleware());
+
+// --- Simple SSE stream for live telemetry ---
+const sseClients = [];
+function broadcastTelemetry(payload){
+  const data = `data: ${JSON.stringify(payload)}\n\n`;
+  sseClients.forEach((res) => res.write(data));
+}
+
+app.get('/api/stream', (req, res) => {
+  res.set({
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    Connection: 'keep-alive',
+  });
+  if(res.flushHeaders) res.flushHeaders();
+  res.write('retry: 5000\n\n');
+  sseClients.push(res);
+  req.on('close', () => {
+    const idx = sseClients.indexOf(res);
+    if(idx >= 0) sseClients.splice(idx, 1);
+  });
+});
+
+// --- Ingest endpoint for Modbus collector / RTDS ---
+app.post('/api/ingest', async (req, res) => {
+  const payload = req.body;
+  if(!Array.isArray(payload)){
+    return res.status(400).json({ error: 'expected JSON array of measurements' });
+  }
+
+  const rows = payload.map((item) => {
+    const ts = item?.timestamp ? new Date(item.timestamp * 1000) : new Date();
+    return {
+      type: 'MEASUREMENT',
+      refId: item?.signal ? String(item.signal) : null,
+      payload: JSON.stringify(item),
+      createdAt: ts,
+    };
+  });
+
+  try{
+    await prisma.eventLog.createMany({ data: rows });
+  }catch(err){
+    logger.error('Failed to store ingest rows', { error: err.message, stack: err.stack });
+    return res.status(500).json({ error: 'failed to store measurements' });
+  }
+
+  broadcastTelemetry(payload);
+  res.json({ stored: rows.length });
+});
 
 const JWT_SECRET = process.env.JWT_SECRET || 'kora-dev-secret-change-me';
 if(!process.env.JWT_SECRET){
-  console.warn('[Auth] JWT_SECRET not set; using insecure default. Set JWT_SECRET in .env.');
+  logger.warn('JWT_SECRET not set; using insecure default', { component: 'auth' });
 }
 
 const toNumber = (value) => Number(value ?? 0);
@@ -49,6 +101,10 @@ const sanitizeUser = (user) => {
   if(!user) return null;
   const { passwordHash, ...rest } = user;
   return rest;
+};
+
+const safeStringify = (value) => {
+  return value ?? null;
 };
 
 function hashPassword(password){
@@ -209,7 +265,7 @@ async function runRegionMatch(regionId){
         receipts.push({ tradeId: trade.id, ...onchain });
       }
     } catch (e) {
-      console.error('chain receipt failed', e);
+      logger.error('Chain receipt failed', { tradeId: trade.id, error: e?.message, stack: e?.stack });
       receipts.push({ tradeId: trade.id, error: e?.message || String(e) });
     }
 
@@ -283,7 +339,7 @@ async function resolveAuthUser(req){
 
   const legacyUserId = req.header('x-user-id');
   if(legacyUserId){
-    console.warn('[Auth] Using legacy x-user-id header; migrate to Bearer token auth.');
+    logger.warn('Using legacy x-user-id header', { component: 'auth', userId: legacyUserId });
     const user = await prisma.user.findUnique({ where: { id: legacyUserId } });
     if(user) return user;
   }
@@ -296,6 +352,283 @@ async function requireUser(req, res, next){
   req.user = user;
   next();
 }
+
+function requireGateway(req, res, next){
+  const token = req.header('x-gateway-token');
+  if(!process.env.GATEWAY_TOKEN){
+    logger.warn('GATEWAY_TOKEN not set; rejecting gateway route', { component: 'gateway' });
+    return res.status(401).json({ error: 'Gateway auth not configured.' });
+  }
+  if(token !== process.env.GATEWAY_TOKEN){
+    return res.status(401).json({ error: 'Unauthorized gateway' });
+  }
+  next();
+}
+
+async function getActiveSession(){
+  return fetchActiveSession(prisma);
+}
+
+app.post('/pilot/telemetry', requireGateway, async (req, res) => {
+  const body = z.object({
+    sessionId: z.string().optional(),
+    tsGateway: z.string().datetime().optional(),
+    seq: z.number().int().optional(),
+    signals: z.record(z.any()),
+    quality: z.string().optional(),
+    alerts: z.array(z.string()).optional()
+  }).parse(req.body || {});
+
+  const active = await getActiveSession();
+  const resolvedSessionId = body.sessionId || active?.sessionId || null;
+
+  const frame = await prisma.telemetryFrame.create({
+    data: {
+      sessionId: resolvedSessionId,
+      tsGateway: body.tsGateway ? new Date(body.tsGateway) : new Date(),
+      seq: body.seq ?? null,
+      signals: safeStringify(body.signals),
+      quality: body.quality || null,
+      alerts: body.alerts ? safeStringify(body.alerts) : null
+    }
+  });
+
+  res.json(mapTelemetryFrame(frame));
+});
+
+app.get('/pilot/telemetry/latest', requireUser, async (_req, res) => {
+  const latest = await prisma.telemetryFrame.findFirst({
+    orderBy: [{ tsGateway: 'desc' }, { createdAt: 'desc' }]
+  });
+  if(!latest) return res.status(404).json({ error: 'No telemetry yet' });
+  res.json(mapTelemetryFrame(latest));
+});
+
+app.get('/pilot/telemetry/frames', requireUser, async (req, res) => {
+  const limit = Math.min(500, Math.max(1, Number(req.query.limit) || 200));
+  const frames = await prisma.telemetryFrame.findMany({
+    orderBy: [{ tsGateway: 'desc' }],
+    take: limit
+  });
+  res.json(frames.map(mapTelemetryFrame));
+});
+
+app.get('/session/state', requireUser, async (_req, res) => {
+  const active = await getActiveSession();
+  if(active) return res.json({ session: presentSession(active) });
+  const latest = await prisma.sessionState.findFirst({ orderBy: [{ createdAt: 'desc' }] });
+  if(!latest) return res.status(404).json({ error: 'No session yet' });
+  res.json({ session: presentSession(latest) });
+});
+
+app.post('/session/start', requireUser, async (req, res) => {
+  const body = z.object({
+    sessionId: z.string().optional(),
+    priceUsdPerKwh: z.number().positive().optional(),
+    thresholds: z.record(z.number()).partial().optional()
+  }).parse(req.body || {});
+
+  await prisma.sessionState.updateMany({
+    where: { endedAt: null },
+    data: { endedAt: new Date(), paused: true, marketActive: false }
+  });
+
+  const sessionId = body.sessionId || `session-${Date.now()}`;
+  const session = await prisma.sessionState.create({
+    data: {
+      sessionId,
+      marketActive: true,
+      paused: false,
+      priceUsdPerKwh: body.priceUsdPerKwh ?? null,
+      thresholds: body.thresholds ? serializeThresholds(body.thresholds) : null
+    }
+  });
+  res.json({ session: presentSession(session) });
+});
+
+app.post('/session/pause', requireUser, async (req, res) => {
+  const body = z.object({ sessionId: z.string().optional() }).parse(req.body || {});
+  const session = body.sessionId
+    ? await prisma.sessionState.findUnique({ where: { sessionId: body.sessionId } })
+    : await getActiveSession();
+  if(!session) return res.status(404).json({ error: 'No active session to pause' });
+  const updated = await prisma.sessionState.update({
+    where: { id: session.id },
+    data: { paused: true, marketActive: false }
+  });
+  res.json({ session: presentSession(updated) });
+});
+
+app.post('/session/stop', requireUser, async (req, res) => {
+  const body = z.object({ sessionId: z.string().optional() }).parse(req.body || {});
+  const session = body.sessionId
+    ? await prisma.sessionState.findUnique({ where: { sessionId: body.sessionId } })
+    : await getActiveSession();
+  if(!session) return res.status(404).json({ error: 'No active session to stop' });
+  const updated = await prisma.sessionState.update({
+    where: { id: session.id },
+    data: { paused: true, marketActive: false, endedAt: new Date() }
+  });
+  res.json({ session: presentSession(updated) });
+});
+
+app.post('/market/price', requireUser, async (req, res) => {
+  const body = z.object({
+    sessionId: z.string().optional(),
+    priceUsdPerKwh: z.number().positive()
+  }).parse(req.body || {});
+
+  const session = body.sessionId
+    ? await prisma.sessionState.findUnique({ where: { sessionId: body.sessionId } })
+    : await getActiveSession();
+  if(!session) return res.status(404).json({ error: 'No active session' });
+
+  const updated = await prisma.sessionState.update({
+    where: { id: session.id },
+    data: { priceUsdPerKwh: body.priceUsdPerKwh }
+  });
+  res.json({ session: presentSession(updated) });
+});
+
+app.post('/market/ev-setpoint', requireUser, async (req, res) => {
+  const body = z.object({
+    sessionId: z.string().optional(),
+    setpointKw: z.number()
+  }).parse(req.body || {});
+
+  const session = body.sessionId
+    ? await prisma.sessionState.findUnique({ where: { sessionId: body.sessionId } })
+    : await getActiveSession();
+  if(!session) return res.status(404).json({ error: 'No active session' });
+
+  const command = await prisma.controlCommand.create({
+    data: {
+      sessionId: session.sessionId,
+      type: 'EV_SETPOINT',
+      payload: safeStringify({ setpointKw: body.setpointKw }),
+      status: 'PENDING'
+    }
+  });
+  res.json({ command });
+});
+
+app.get('/controls/current', requireGateway, async (_req, res) => {
+  const session = await getActiveSession();
+  if(!session) return res.json({ commands: [] });
+  const commands = await prisma.controlCommand.findMany({
+    where: { sessionId: session.sessionId, status: 'PENDING' },
+    orderBy: [{ issuedAt: 'asc' }]
+  });
+  res.json({
+    sessionId: session.sessionId,
+    commands: commands.map(cmd => ({
+      ...cmd,
+      payload: safeJson(cmd.payload)
+    }))
+  });
+});
+
+app.post('/controls/:id/ack', requireGateway, async (req, res) => {
+  const body = z.object({
+    status: z.enum(['APPLIED', 'FAILED', 'PENDING']).optional(),
+    appliedAt: z.string().datetime().optional()
+  }).parse(req.body || {});
+
+  const cmd = await prisma.controlCommand.findUnique({ where: { id: req.params.id } });
+  if(!cmd) return res.status(404).json({ error: 'not found' });
+
+  const updated = await prisma.controlCommand.update({
+    where: { id: cmd.id },
+    data: {
+      status: body.status || 'APPLIED',
+      appliedAt: body.appliedAt ? new Date(body.appliedAt) : new Date()
+    }
+  });
+  res.json({ command: updated });
+});
+
+function avg(values){
+  return values.length ? values.reduce((s, n)=>s + n, 0) / values.length : null;
+}
+
+function summarizeControlEffectiveness(frames){
+  if(!frames?.length) return { setpointAvg: null, actualAvg: null, absErrorAvg: null };
+  const setpoints = [];
+  const actuals = [];
+  const absErrors = [];
+  frames.forEach(frame=>{
+    const sp = Number(frame.signals?.['market.trade_power_kw_setpoint'] ?? frame.signals?.['home_b.ev_setpoint_kw']);
+    const act = Number(frame.signals?.['home_b.ev_power_kw']);
+    if(Number.isFinite(sp)) setpoints.push(sp);
+    if(Number.isFinite(act)) actuals.push(act);
+    if(Number.isFinite(sp) && Number.isFinite(act)) absErrors.push(Math.abs(sp - act));
+  });
+  return {
+    setpointAvg: avg(setpoints),
+    actualAvg: avg(actuals),
+    absErrorAvg: avg(absErrors)
+  };
+}
+
+function summarizeCoupling(frames, thresholdsRaw){
+  if(!frames?.length) return { voltageSpan: null, tradeEnergyKwh: 0, voltageReliefPerKwh: null };
+  const voltages = frames
+    .map(f=>Number(f.signals?.['feeder.voltage_v']))
+    .filter((v)=>Number.isFinite(v));
+  const span = voltages.length ? Math.max(...voltages) - Math.min(...voltages) : null;
+  const { matchedKwh } = integrateTradeEnergy(frames);
+  const thresholds = safeJsonTelemetry(thresholdsRaw) || thresholdsRaw || {};
+  const ovl = thresholds.ovl_v || null;
+  const reliefPerKwh = matchedKwh > 0 && span !== null && ovl
+    ? Math.max(0, span) / matchedKwh
+    : null;
+  return {
+    voltageSpan: span,
+    tradeEnergyKwh: matchedKwh,
+    voltageReliefPerKwh: reliefPerKwh
+  };
+}
+
+app.get('/pilot/kpi/:view', requireUser, async (req, res) => {
+  const view = req.params.view;
+  const minutes = Math.min(240, Math.max(1, Number(req.query.minutes) || 30));
+  const since = new Date(Date.now() - minutes * 60 * 1000);
+  const [framesRaw, session] = await Promise.all([
+    prisma.telemetryFrame.findMany({
+      where: { tsGateway: { gte: since } },
+      orderBy: [{ tsGateway: 'desc' }],
+      take: 500
+    }),
+    getActiveSession()
+  ]);
+  const frames = framesRaw.map(mapTelemetryFrame);
+  let data = {};
+  switch(view){
+    case 'grid-health':
+      data = summarizeFrames(frames, session?.thresholds);
+      break;
+    case 'control-effectiveness':
+      data = summarizeControlEffectiveness(frames);
+      break;
+    case 'market-performance':
+      data = {
+        ...integrateTradeEnergy(frames),
+        priceUsdPerKwh: session?.priceUsdPerKwh ?? null
+      };
+      break;
+    case 'coupling-intelligence':
+      data = summarizeCoupling(frames, session?.thresholds);
+      break;
+    default:
+      return res.status(400).json({ error: 'Unknown KPI view' });
+  }
+  res.json({
+    view,
+    since: since.toISOString(),
+    frames: frames.length,
+    data
+  });
+});
 
 app.post('/auth/dev-login', async (req, res) => {
   const body = z.object({ email: z.string().email(), name: z.string().optional(), regionId: z.string().optional() }).parse(req.body || {});
@@ -363,6 +696,64 @@ app.post('/auth/login', async (req, res) => {
 
   const token = signToken(user);
   res.json({ user: sanitizeUser(user), token });
+});
+
+// Password reset tokens (in-memory for demo; use Redis/DB in production)
+const passwordResetTokens = new Map();
+
+app.post('/auth/forgot-password', async (req, res) => {
+  const body = z.object({
+    email: z.string().email()
+  }).parse(req.body || {});
+
+  const user = await prisma.user.findUnique({ where: { email: body.email } });
+
+  // Always return success to prevent email enumeration
+  if(!user){
+    return res.json({ message: 'If an account exists, a reset link has been sent.' });
+  }
+
+  // Generate reset token (valid for 1 hour)
+  const resetToken = crypto.randomBytes(32).toString('hex');
+  const expiry = Date.now() + 60 * 60 * 1000; // 1 hour
+
+  passwordResetTokens.set(resetToken, { userId: user.id, email: user.email, expiry });
+
+  // In production, send email. For now, log it.
+  const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password?token=${resetToken}`;
+  logger.info('Password reset requested', { component: 'auth', email: user.email, resetUrl });
+
+  res.json({ message: 'If an account exists, a reset link has been sent.' });
+});
+
+app.post('/auth/reset-password', async (req, res) => {
+  const body = z.object({
+    token: z.string().min(1),
+    password: z.string().min(6)
+  }).parse(req.body || {});
+
+  const tokenData = passwordResetTokens.get(body.token);
+
+  if(!tokenData){
+    return res.status(400).json({ error: 'Invalid or expired reset token' });
+  }
+
+  if(Date.now() > tokenData.expiry){
+    passwordResetTokens.delete(body.token);
+    return res.status(400).json({ error: 'Reset token has expired' });
+  }
+
+  // Update password
+  const hashedPassword = hashPassword(body.password);
+  await prisma.user.update({
+    where: { id: tokenData.userId },
+    data: { passwordHash: hashedPassword }
+  });
+
+  // Invalidate token
+  passwordResetTokens.delete(body.token);
+
+  res.json({ message: 'Password has been reset successfully' });
 });
 
 app.post('/auth/pilot-login', async (req, res) => {
@@ -1304,6 +1695,97 @@ app.post('/match/run', requireUser, async (req, res) => {
   res.json(summary);
 });
 
+// --- Site Management ---
+// ============================================
+// Site Configuration Endpoints
+// ============================================
+
+// List all active sites
+app.get('/sites', requireUser, async (_req, res) => {
+  const sites = await prisma.site.findMany({
+    where: { isActive: true },
+    orderBy: { name: 'asc' }
+  });
+  res.json(sites);
+});
+
+// Get single site config
+app.get('/sites/:id', requireUser, async (req, res) => {
+  const site = await prisma.site.findUnique({
+    where: { id: req.params.id }
+  });
+
+  if (!site) {
+    return res.status(404).json({ error: 'Site not found' });
+  }
+
+  res.json(site);
+});
+
+// Update site config
+app.put('/sites/:id', requireUser, async (req, res) => {
+  const site = await prisma.site.findUnique({
+    where: { id: req.params.id }
+  });
+
+  if (!site) {
+    return res.status(404).json({ error: 'Site not found' });
+  }
+
+  const body = z.object({
+    name: z.string().min(1).optional(),
+    location: z.string().optional(),
+    timezone: z.string().optional(),
+    // Solar
+    pvCapacityKwp: z.number().positive().optional(),
+    // Battery
+    batteryCapacityKwh: z.number().positive().optional(),
+    batteryPowerKw: z.number().positive().optional(),
+    socMinPct: z.number().min(0).max(100).optional(),
+    socMaxPct: z.number().min(0).max(100).optional(),
+    etaCharge: z.number().min(0).max(1).optional(),
+    etaDischarge: z.number().min(0).max(1).optional(),
+    // Demand
+    peakDemandKw: z.number().positive().optional(),
+    baseDemandKw: z.number().positive().optional(),
+    customerCount: z.number().int().positive().optional(),
+    // Pricing
+    priceMinAriary: z.number().positive().optional(),
+    priceMaxAriary: z.number().positive().optional(),
+    priceRefAriary: z.number().positive().optional(),
+    elasticity: z.number().min(0).max(2).optional(),
+  }).parse(req.body || {});
+
+  const updated = await prisma.site.update({
+    where: { id: req.params.id },
+    data: body
+  });
+
+  res.json(updated);
+});
+
+// Create new site (admin only for now)
+app.post('/sites', requireUser, async (req, res) => {
+  const body = z.object({
+    id: z.string().optional(),
+    name: z.string().min(1),
+    location: z.string().optional(),
+    timezone: z.string().default('UTC'),
+    pvCapacityKwp: z.number().positive(),
+    batteryCapacityKwh: z.number().positive(),
+    batteryPowerKw: z.number().positive(),
+  }).parse(req.body || {});
+
+  const site = await prisma.site.create({
+    data: body
+  });
+
+  res.json(site);
+});
+
+// Note: Site telemetry and user management endpoints will be added
+// when UserSite and SiteTelemetry models are implemented
+
 app.get('/wallet', requireUser, async (req, res) => {
   const w = await prisma.wallet.findUnique({ where: { userId: req.user.id } });
   res.json(w);
@@ -1314,6 +1796,736 @@ app.post('/wallet/topup', requireUser, async (req, res) => {
   const w = await prisma.wallet.findUnique({ where: { userId: req.user.id } });
   res.json(w);
 });
+
+// ============================================================
+// SIMULATION & OPTIMIZER ENDPOINTS
+// ============================================================
+
+// SSE clients for optimizer/simulation stream
+const optimizerSseClients = [];
+
+function broadcastOptimizer(event, data) {
+  const message = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+  optimizerSseClients.forEach((res) => res.write(message));
+}
+
+// GET /api/optimizer/stream - SSE for real-time simulation updates
+app.get('/api/optimizer/stream', (req, res) => {
+  res.set({
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    Connection: 'keep-alive',
+  });
+  if (res.flushHeaders) res.flushHeaders();
+  res.write('retry: 3000\n\n');
+  optimizerSseClients.push(res);
+  req.on('close', () => {
+    const idx = optimizerSseClients.indexOf(res);
+    if (idx >= 0) optimizerSseClients.splice(idx, 1);
+  });
+});
+
+// GET /api/optimizer/status - Current optimizer/simulation state
+app.get('/api/optimizer/status', async (req, res) => {
+  try {
+    const siteId = req.query.siteId || 'mahavelona';
+
+    // Get simulation state
+    const simState = await prisma.simulationState.findUnique({
+      where: { siteId }
+    });
+
+    // Get latest optimizer run
+    const latestRun = await prisma.optimizerRun.findFirst({
+      where: { siteId },
+      orderBy: { simulatedTime: 'desc' }
+    });
+
+    // Get recent telemetry for charts (last 24 simulated hours)
+    let recentTelemetry = [];
+    if (simState?.simulatedTime) {
+      const since = new Date(simState.simulatedTime.getTime() - 24 * 60 * 60 * 1000);
+      recentTelemetry = await prisma.simTelemetry.findMany({
+        where: {
+          siteId,
+          simulatedTime: { gte: since }
+        },
+        orderBy: { simulatedTime: 'asc' },
+        take: 1440 // 1 minute resolution for 24 hours
+      });
+    }
+
+    res.json({
+      simulation: simState || {
+        isRunning: false,
+        isPaused: false,
+        timeAcceleration: 60,
+        simulatedTime: null,
+        batterySocKwh: 0,
+        batterySocPct: 0,
+        currentPvKw: 0,
+        currentDemandKw: 0,
+        currentPriceAriary: 1750,
+        currentChargeKw: 0,
+        currentCurtailKw: 0
+      },
+      latestRun: latestRun || null,
+      telemetry: recentTelemetry
+    });
+  } catch (err) {
+    logger.error('Failed to get optimizer status', { error: err.message, stack: err.stack });
+    res.status(500).json({ error: 'Failed to get optimizer status' });
+  }
+});
+
+// GET /api/optimizer/history - Past optimizer runs with pagination
+app.get('/api/optimizer/history', async (req, res) => {
+  try {
+    const siteId = req.query.siteId || 'mahavelona';
+    const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 24));
+    const offset = Math.max(0, Number(req.query.offset) || 0);
+
+    const runs = await prisma.optimizerRun.findMany({
+      where: { siteId },
+      orderBy: { simulatedTime: 'desc' },
+      take: limit,
+      skip: offset
+    });
+
+    const total = await prisma.optimizerRun.count({ where: { siteId } });
+
+    res.json({
+      runs,
+      pagination: { limit, offset, total }
+    });
+  } catch (err) {
+    logger.error('Failed to get optimizer history', { error: err.message, stack: err.stack });
+    res.status(500).json({ error: 'Failed to get optimizer history' });
+  }
+});
+
+// POST /api/simulation/start - Start or resume simulation
+app.post('/api/simulation/start', async (req, res) => {
+  try {
+    const body = z.object({
+      siteId: z.string().default('mahavelona'),
+      timeAcceleration: z.number().min(1).max(3600).default(60),
+      startHour: z.number().min(0).max(23).default(6),
+      initialSocPct: z.number().min(0).max(100).default(45)
+    }).parse(req.body || {});
+
+    const now = new Date();
+    const simulatedTime = new Date(now);
+    simulatedTime.setHours(body.startHour, 0, 0, 0);
+
+    // Mahavelona battery: 100 kWh capacity
+    const batteryCapacityKwh = 100;
+    const batterySocKwh = (body.initialSocPct / 100) * batteryCapacityKwh;
+
+    const simState = await prisma.simulationState.upsert({
+      where: { siteId: body.siteId },
+      update: {
+        isRunning: true,
+        isPaused: false,
+        timeAcceleration: body.timeAcceleration,
+        simulatedTime,
+        startedAt: now,
+        batterySocKwh,
+        batterySocPct: body.initialSocPct,
+        currentPvKw: 0,
+        currentDemandKw: 0,
+        currentPriceAriary: 1750,
+        currentChargeKw: 0,
+        currentCurtailKw: 0,
+        totalEnergyKwh: 0,
+        totalCurtailKwh: 0,
+        totalRevenueAr: 0
+      },
+      create: {
+        siteId: body.siteId,
+        isRunning: true,
+        isPaused: false,
+        timeAcceleration: body.timeAcceleration,
+        simulatedTime,
+        startedAt: now,
+        batterySocKwh,
+        batterySocPct: body.initialSocPct,
+        currentPvKw: 0,
+        currentDemandKw: 0,
+        currentPriceAriary: 1750,
+        currentChargeKw: 0,
+        currentCurtailKw: 0,
+        totalEnergyKwh: 0,
+        totalCurtailKwh: 0,
+        totalRevenueAr: 0
+      }
+    });
+
+    broadcastOptimizer('simulation:state', { action: 'start', state: simState });
+
+    res.json({ success: true, state: simState });
+  } catch (err) {
+    logger.error('Failed to start simulation', { error: err.message, stack: err.stack });
+    res.status(500).json({ error: 'Failed to start simulation' });
+  }
+});
+
+// POST /api/simulation/pause - Pause/resume simulation
+app.post('/api/simulation/pause', async (req, res) => {
+  try {
+    const body = z.object({
+      siteId: z.string().default('mahavelona')
+    }).parse(req.body || {});
+
+    const current = await prisma.simulationState.findUnique({
+      where: { siteId: body.siteId }
+    });
+
+    if (!current) {
+      return res.status(404).json({ error: 'No simulation found' });
+    }
+
+    const simState = await prisma.simulationState.update({
+      where: { siteId: body.siteId },
+      data: { isPaused: !current.isPaused }
+    });
+
+    broadcastOptimizer('simulation:state', {
+      action: simState.isPaused ? 'pause' : 'resume',
+      state: simState
+    });
+
+    res.json({ success: true, state: simState });
+  } catch (err) {
+    logger.error('Failed to pause simulation', { error: err.message, stack: err.stack });
+    res.status(500).json({ error: 'Failed to pause simulation' });
+  }
+});
+
+// POST /api/simulation/stop - Stop simulation
+app.post('/api/simulation/stop', async (req, res) => {
+  try {
+    const body = z.object({
+      siteId: z.string().default('mahavelona'),
+      reset: z.boolean().default(false)
+    }).parse(req.body || {});
+
+    const simState = await prisma.simulationState.update({
+      where: { siteId: body.siteId },
+      data: {
+        isRunning: false,
+        isPaused: false,
+        activeRunId: null
+      }
+    });
+
+    broadcastOptimizer('simulation:state', { action: 'stop', state: simState });
+
+    res.json({ success: true, state: simState });
+  } catch (err) {
+    logger.error('Failed to stop simulation', { error: err.message, stack: err.stack });
+    res.status(500).json({ error: 'Failed to stop simulation' });
+  }
+});
+
+// POST /api/optimizer/result - Python service posts optimizer results
+app.post('/api/optimizer/result', async (req, res) => {
+  try {
+    const body = z.object({
+      siteId: z.string().default('mahavelona'),
+      runId: z.string(),
+      simulatedTime: z.string(),  // Accept any ISO format (Python may omit 'Z')
+      status: z.enum(['success', 'timeout', 'infeasible', 'error']),
+      solver: z.string(),
+      solveTimeSec: z.number(),
+      curtailmentRate: z.number().optional(),
+      totalRevenueAriary: z.number().optional(),
+      totalCurtailmentKwh: z.number().optional(),
+      totalDemandServedKwh: z.number().optional(),
+      blackoutHours: z.number().int().default(0),
+      priceSchedule: z.any().optional(),
+      batterySchedule: z.any().optional(),
+      pvForecast: z.any().optional(),
+      demandForecast: z.any().optional(),
+      errorMessage: z.string().optional()
+    }).parse(req.body || {});
+
+    const runData = {
+      siteId: body.siteId,
+      runId: body.runId,
+      simulatedTime: new Date(body.simulatedTime),
+      status: body.status,
+      solver: body.solver,
+      solveTimeSec: body.solveTimeSec,
+      curtailmentRate: body.curtailmentRate,
+      totalRevenueAriary: body.totalRevenueAriary,
+      totalCurtailmentKwh: body.totalCurtailmentKwh,
+      totalDemandServedKwh: body.totalDemandServedKwh,
+      blackoutHours: body.blackoutHours,
+      priceSchedule: body.priceSchedule,
+      batterySchedule: body.batterySchedule,
+      pvForecast: body.pvForecast,
+      demandForecast: body.demandForecast,
+      errorMessage: body.errorMessage
+    };
+    // Use upsert to handle duplicate runIds gracefully
+    const run = await prisma.optimizerRun.upsert({
+      where: { runId: body.runId },
+      update: runData,
+      create: runData
+    });
+
+    // Update simulation state with active run
+    await prisma.simulationState.update({
+      where: { siteId: body.siteId },
+      data: { activeRunId: body.runId }
+    });
+
+    broadcastOptimizer('optimizer:run', run);
+
+    res.json({ success: true, run });
+  } catch (err) {
+    logger.error('Failed to store optimizer result', { error: err.message, stack: err.stack });
+    res.status(500).json({ error: 'Failed to store optimizer result' });
+  }
+});
+
+// POST /api/simulation/tick - Python service posts telemetry each tick
+app.post('/api/simulation/tick', async (req, res) => {
+  try {
+    const body = z.object({
+      siteId: z.string().default('mahavelona'),
+      simulatedTime: z.string(),  // Accept any ISO format (Python may omit 'Z')
+      pvKw: z.number(),
+      demandKw: z.number(),
+      priceAriary: z.number(),
+      socKwh: z.number(),
+      socPct: z.number(),
+      chargeKw: z.number(),
+      curtailKw: z.number(),
+      totalEnergyKwh: z.number().optional(),
+      totalCurtailKwh: z.number().optional(),
+      totalRevenueAr: z.number().optional()
+    }).parse(req.body || {});
+
+    // Create telemetry record
+    await prisma.simTelemetry.create({
+      data: {
+        siteId: body.siteId,
+        simulatedTime: new Date(body.simulatedTime),
+        pvKw: body.pvKw,
+        demandKw: body.demandKw,
+        priceAriary: body.priceAriary,
+        socKwh: body.socKwh,
+        socPct: body.socPct,
+        chargeKw: body.chargeKw,
+        curtailKw: body.curtailKw
+      }
+    });
+
+    // Update simulation state
+    const simState = await prisma.simulationState.update({
+      where: { siteId: body.siteId },
+      data: {
+        simulatedTime: new Date(body.simulatedTime),
+        currentPvKw: body.pvKw,
+        currentDemandKw: body.demandKw,
+        currentPriceAriary: body.priceAriary,
+        batterySocKwh: body.socKwh,
+        batterySocPct: body.socPct,
+        currentChargeKw: body.chargeKw,
+        currentCurtailKw: body.curtailKw,
+        totalEnergyKwh: body.totalEnergyKwh ?? undefined,
+        totalCurtailKwh: body.totalCurtailKwh ?? undefined,
+        totalRevenueAr: body.totalRevenueAr ?? undefined
+      }
+    });
+
+    // Broadcast to all SSE clients
+    broadcastOptimizer('simulation:tick', {
+      simulatedTime: body.simulatedTime,
+      pvKw: body.pvKw,
+      demandKw: body.demandKw,
+      priceAriary: body.priceAriary,
+      socKwh: body.socKwh,
+      socPct: body.socPct,
+      chargeKw: body.chargeKw,
+      curtailKw: body.curtailKw,
+      totalEnergyKwh: simState.totalEnergyKwh,
+      totalCurtailKwh: simState.totalCurtailKwh,
+      totalRevenueAr: simState.totalRevenueAr
+    });
+
+    res.json({ success: true });
+  } catch (err) {
+    logger.error('Failed to process simulation tick', { error: err.message, stack: err.stack });
+    res.status(500).json({ error: 'Failed to process tick' });
+  }
+});
+
+// ============================================================
+// END SIMULATION ENDPOINTS
+// ============================================================
+
+// ============================================================
+// FORECASTING ENDPOINTS
+// ============================================================
+
+// In-memory cache for forecasts (simple TTL cache)
+const forecastCache = new Map();
+const FORECAST_CACHE_TTL_MS = 3600 * 1000; // 1 hour
+
+function getCachedForecast(key) {
+  const entry = forecastCache.get(key);
+  if (!entry) return null;
+  if (Date.now() > entry.expiresAt) {
+    forecastCache.delete(key);
+    return null;
+  }
+  return entry.data;
+}
+
+function setCachedForecast(key, data, ttlMs = FORECAST_CACHE_TTL_MS) {
+  forecastCache.set(key, {
+    data,
+    expiresAt: Date.now() + ttlMs
+  });
+}
+
+// GET /api/forecast/pv - Solar PV production forecast
+app.get('/api/forecast/pv', async (req, res) => {
+  try {
+    const siteId = req.query.siteId || 'mahavelona';
+    const hours = Math.min(48, Math.max(1, Number(req.query.hours) || 24));
+
+    // Check cache first
+    const cacheKey = `pv_${siteId}_${hours}`;
+    const cached = getCachedForecast(cacheKey);
+    if (cached) {
+      return res.json({ ...cached, cached: true });
+    }
+
+    // Get latest forecast from database
+    const forecast = await prisma.pVForecast.findFirst({
+      where: { siteId },
+      orderBy: { forecastTime: 'desc' }
+    });
+
+    if (!forecast) {
+      // No stored forecast - generate synthetic one for now
+      // In production, this would call the Python forecasting service
+      const syntheticPv = generateSyntheticPvForecast(hours);
+      const result = {
+        siteId,
+        forecastTime: new Date().toISOString(),
+        horizonHours: hours,
+        pvKw: syntheticPv,
+        method: 'synthetic',
+        source: 'generated'
+      };
+      setCachedForecast(cacheKey, result);
+      return res.json(result);
+    }
+
+    const result = {
+      siteId: forecast.siteId,
+      forecastTime: forecast.forecastTime,
+      horizonHours: forecast.horizonHours,
+      pvKw: forecast.pvKwArray,
+      method: forecast.method,
+      source: forecast.weatherSource || 'database'
+    };
+
+    setCachedForecast(cacheKey, result);
+    res.json(result);
+  } catch (err) {
+    logger.error('Failed to get PV forecast', { error: err.message, stack: err.stack });
+    res.status(500).json({ error: 'Failed to get PV forecast' });
+  }
+});
+
+// GET /api/forecast/demand - Demand forecast
+app.get('/api/forecast/demand', async (req, res) => {
+  try {
+    const siteId = req.query.siteId || 'mahavelona';
+    const hours = Math.min(48, Math.max(1, Number(req.query.hours) || 24));
+
+    // Check cache
+    const cacheKey = `demand_${siteId}_${hours}`;
+    const cached = getCachedForecast(cacheKey);
+    if (cached) {
+      return res.json({ ...cached, cached: true });
+    }
+
+    // Get latest forecast from database
+    const forecast = await prisma.demandForecast.findFirst({
+      where: { siteId },
+      orderBy: { forecastTime: 'desc' }
+    });
+
+    if (!forecast) {
+      // Generate synthetic demand forecast
+      const syntheticDemand = generateSyntheticDemandForecast(hours);
+      const result = {
+        siteId,
+        forecastTime: new Date().toISOString(),
+        horizonHours: hours,
+        demandKw: syntheticDemand,
+        method: 'synthetic',
+        source: 'generated'
+      };
+      setCachedForecast(cacheKey, result);
+      return res.json(result);
+    }
+
+    const result = {
+      siteId: forecast.siteId,
+      forecastTime: forecast.forecastTime,
+      horizonHours: forecast.horizonHours,
+      demandKw: forecast.demandKwArray,
+      method: forecast.method,
+      priceAdjusted: forecast.priceAdjusted,
+      source: 'database'
+    };
+
+    setCachedForecast(cacheKey, result);
+    res.json(result);
+  } catch (err) {
+    logger.error('Failed to get demand forecast', { error: err.message, stack: err.stack });
+    res.status(500).json({ error: 'Failed to get demand forecast' });
+  }
+});
+
+// GET /api/forecast/risk - Outage risk assessment
+app.get('/api/forecast/risk', async (req, res) => {
+  try {
+    const siteId = req.query.siteId || 'mahavelona';
+
+    // Get latest risk assessment
+    const risk = await prisma.outageRiskAssessment.findFirst({
+      where: { siteId },
+      orderBy: { assessmentTime: 'desc' }
+    });
+
+    if (!risk) {
+      // Generate synthetic risk assessment
+      const result = {
+        siteId,
+        assessmentTime: new Date().toISOString(),
+        overallRisk: 0.15,
+        socRisk: 0.1,
+        demandRisk: 0.15,
+        weatherRisk: 0.0,
+        peakDeficitKw: 0,
+        lowSocHours: 0,
+        alertLevel: 'normal',
+        recommendations: ['System operating normally'],
+        source: 'generated'
+      };
+      return res.json(result);
+    }
+
+    res.json({
+      siteId: risk.siteId,
+      assessmentTime: risk.assessmentTime,
+      overallRisk: risk.overallRisk,
+      socRisk: risk.socRisk,
+      demandRisk: risk.demandRisk,
+      weatherRisk: risk.weatherRisk,
+      peakDeficitKw: risk.peakDeficitKw,
+      lowSocHours: risk.lowSocHours,
+      alertLevel: risk.alertLevel,
+      source: 'database'
+    });
+  } catch (err) {
+    logger.error('Failed to get risk assessment', { error: err.message, stack: err.stack });
+    res.status(500).json({ error: 'Failed to get risk assessment' });
+  }
+});
+
+// POST /api/forecast/pv - Store PV forecast (from Python service)
+app.post('/api/forecast/pv', async (req, res) => {
+  try {
+    const body = z.object({
+      siteId: z.string().default('mahavelona'),
+      horizonHours: z.number().min(1).max(48).default(24),
+      pvKwArray: z.array(z.number()),
+      method: z.string().default('physics'),
+      weatherSource: z.string().optional()
+    }).parse(req.body);
+
+    const forecast = await prisma.pVForecast.create({
+      data: {
+        siteId: body.siteId,
+        forecastTime: new Date(),
+        horizonHours: body.horizonHours,
+        pvKwArray: body.pvKwArray,
+        method: body.method,
+        weatherSource: body.weatherSource
+      }
+    });
+
+    // Invalidate cache
+    forecastCache.delete(`pv_${body.siteId}_${body.horizonHours}`);
+
+    logger.info('Stored PV forecast', { siteId: body.siteId, hours: body.horizonHours });
+    res.json({ success: true, id: forecast.id });
+  } catch (err) {
+    logger.error('Failed to store PV forecast', { error: err.message, stack: err.stack });
+    res.status(500).json({ error: 'Failed to store PV forecast' });
+  }
+});
+
+// POST /api/forecast/demand - Store demand forecast (from Python service)
+app.post('/api/forecast/demand', async (req, res) => {
+  try {
+    const body = z.object({
+      siteId: z.string().default('mahavelona'),
+      horizonHours: z.number().min(1).max(48).default(24),
+      demandKwArray: z.array(z.number()),
+      method: z.string().default('pattern'),
+      priceAdjusted: z.boolean().default(false)
+    }).parse(req.body);
+
+    const forecast = await prisma.demandForecast.create({
+      data: {
+        siteId: body.siteId,
+        forecastTime: new Date(),
+        horizonHours: body.horizonHours,
+        demandKwArray: body.demandKwArray,
+        method: body.method,
+        priceAdjusted: body.priceAdjusted
+      }
+    });
+
+    // Invalidate cache
+    forecastCache.delete(`demand_${body.siteId}_${body.horizonHours}`);
+
+    logger.info('Stored demand forecast', { siteId: body.siteId, hours: body.horizonHours });
+    res.json({ success: true, id: forecast.id });
+  } catch (err) {
+    logger.error('Failed to store demand forecast', { error: err.message, stack: err.stack });
+    res.status(500).json({ error: 'Failed to store demand forecast' });
+  }
+});
+
+// POST /api/forecast/risk - Store risk assessment (from Python service)
+app.post('/api/forecast/risk', async (req, res) => {
+  try {
+    const body = z.object({
+      siteId: z.string().default('mahavelona'),
+      overallRisk: z.number().min(0).max(1),
+      socRisk: z.number().min(0).max(1),
+      demandRisk: z.number().min(0).max(1),
+      weatherRisk: z.number().min(0).max(1),
+      peakDeficitKw: z.number().optional(),
+      lowSocHours: z.number().int().default(0),
+      alertLevel: z.enum(['normal', 'watch', 'warning', 'critical'])
+    }).parse(req.body);
+
+    const risk = await prisma.outageRiskAssessment.create({
+      data: {
+        siteId: body.siteId,
+        assessmentTime: new Date(),
+        overallRisk: body.overallRisk,
+        socRisk: body.socRisk,
+        demandRisk: body.demandRisk,
+        weatherRisk: body.weatherRisk,
+        peakDeficitKw: body.peakDeficitKw,
+        lowSocHours: body.lowSocHours,
+        alertLevel: body.alertLevel
+      }
+    });
+
+    // Broadcast to SSE clients if warning/critical
+    if (body.alertLevel === 'warning' || body.alertLevel === 'critical') {
+      broadcastOptimizer('risk:alert', {
+        siteId: body.siteId,
+        alertLevel: body.alertLevel,
+        overallRisk: body.overallRisk
+      });
+    }
+
+    logger.info('Stored risk assessment', { siteId: body.siteId, alertLevel: body.alertLevel });
+    res.json({ success: true, id: risk.id });
+  } catch (err) {
+    logger.error('Failed to store risk assessment', { error: err.message, stack: err.stack });
+    res.status(500).json({ error: 'Failed to store risk assessment' });
+  }
+});
+
+// POST /api/forecast/refresh - Force refresh forecasts
+app.post('/api/forecast/refresh', async (req, res) => {
+  const siteId = req.body.siteId || 'mahavelona';
+
+  // Clear all cached forecasts for this site
+  for (const key of forecastCache.keys()) {
+    if (key.includes(siteId)) {
+      forecastCache.delete(key);
+    }
+  }
+
+  logger.info('Cleared forecast cache', { siteId });
+  res.json({ success: true, message: 'Forecast cache cleared' });
+});
+
+// Synthetic forecast generators (fallback when Python service not available)
+function generateSyntheticPvForecast(hours) {
+  const result = [];
+  const now = new Date();
+  const pvCapacity = 118.5; // Mahavelona
+
+  for (let h = 0; h < hours; h++) {
+    const hour = (now.getHours() + h) % 24;
+
+    // No sun at night
+    if (hour < 5 || hour > 19) {
+      result.push(0);
+      continue;
+    }
+
+    // Bell curve peaking at noon
+    const noonOffset = Math.abs(hour - 12);
+    const basePv = pvCapacity * Math.max(0, 1 - Math.pow(noonOffset / 7, 2));
+
+    // Add some randomness (±10%)
+    const randomFactor = 0.9 + Math.random() * 0.2;
+    result.push(Math.round(basePv * randomFactor * 10) / 10);
+  }
+
+  return result;
+}
+
+function generateSyntheticDemandForecast(hours) {
+  const result = [];
+  const now = new Date();
+  const peakLoad = 53; // Mahavelona
+  const baseLoad = 8;
+
+  // Hourly pattern
+  const pattern = {
+    0: 0.20, 1: 0.15, 2: 0.15, 3: 0.15, 4: 0.15, 5: 0.20,
+    6: 0.35, 7: 0.45, 8: 0.50, 9: 0.48, 10: 0.45, 11: 0.50,
+    12: 0.40, 13: 0.38, 14: 0.45, 15: 0.50, 16: 0.60, 17: 0.75,
+    18: 0.95, 19: 1.00, 20: 0.90, 21: 0.70, 22: 0.50, 23: 0.30
+  };
+
+  for (let h = 0; h < hours; h++) {
+    const hour = (now.getHours() + h) % 24;
+    const patternValue = pattern[hour] || 0.3;
+    const baseDemand = baseLoad + (peakLoad - baseLoad) * patternValue;
+
+    // Add randomness (±5%)
+    const randomFactor = 0.95 + Math.random() * 0.1;
+    result.push(Math.round(baseDemand * randomFactor * 10) / 10);
+  }
+
+  return result;
+}
+
+// ============================================================
+// END FORECASTING ENDPOINTS
+// ============================================================
 
 async function seed(){
   const count = await prisma.user.count();
@@ -1329,24 +2541,71 @@ async function seed(){
   await ensurePilotUser('operator');
   await ensurePilotUser('anchor');
 }
-seed().catch(e=>console.error('seed error', e));
+seed().catch(e => logger.error('Seed error', { error: e.message, stack: e.stack }));
 
 // Simple root route so visiting the base URL shows something
 app.get('/', (req, res) => {
   res.send('Kora API is running ✅');
 });
 
-// Health check for UCSD / uptime checks
-app.get('/health', (req, res) => {
-  res.json({
-    status: 'ok',
+// Health check for uptime monitoring
+app.get('/health', async (req, res) => {
+  const checks = {
+    api: 'ok',
+    database: 'unknown',
+  };
+
+  // Check database connection
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    checks.database = 'ok';
+  } catch (err) {
+    checks.database = 'error';
+    logger.error('Health check: database connection failed', { error: err.message });
+  }
+
+  const allOk = Object.values(checks).every(v => v === 'ok');
+
+  res.status(allOk ? 200 : 503).json({
+    status: allOk ? 'ok' : 'degraded',
     service: 'kora-api',
     version: '0.1.0',
+    timestamp: new Date().toISOString(),
+    checks,
   });
+});
+
+// Detailed database health check
+app.get('/health/db', async (req, res) => {
+  try {
+    const start = Date.now();
+    await prisma.$queryRaw`SELECT 1`;
+    const latencyMs = Date.now() - start;
+
+    // Check recent data
+    const userCount = await prisma.user.count();
+    const recentRun = await prisma.optimizerRun.findFirst({
+      orderBy: { createdAt: 'desc' },
+      select: { createdAt: true },
+    });
+
+    res.json({
+      status: 'ok',
+      latencyMs,
+      userCount,
+      lastOptimizerRun: recentRun?.createdAt || null,
+    });
+  } catch (err) {
+    logger.error('Database health check failed', { error: err.message });
+    res.status(503).json({
+      status: 'error',
+      error: err.message,
+    });
+  }
 });
 
 const PORT = process.env.PORT || 4000;
 
 app.listen(PORT, () => {
-  console.log(`Kora API listening on port ${PORT}`);
+  logger.info('Kora API started', { port: PORT, environment: process.env.NODE_ENV || 'development' });
 });

@@ -3,60 +3,60 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model User {
-  id         String  @id @default(cuid())
-  email      String  @unique
+  id           String    @id @default(cuid())
+  email        String    @unique
   passwordHash String?
-  name       String?
-  phone      String?
+  name         String?
+  phone        String?
   organization String?
-  address    String?
-  timezone   String?
-  regionId   String?
-  createdAt  DateTime @default(now())
-  wallet     Wallet?
-  assets     Asset[]
-  offers     Offer[]
-  requests   Request[]
-  buyerTrades  Trade[] @relation("buyerTrades")
-  sellerTrades Trade[] @relation("sellerTrades")
+  address      String?
+  timezone     String?
+  regionId     String?
+  createdAt    DateTime  @default(now())
+  assets       Asset[]
+  offers       Offer[]
+  requests     Request[]
+  buyerTrades  Trade[]   @relation("buyerTrades")
+  sellerTrades Trade[]   @relation("sellerTrades")
+  wallet       Wallet?
 }
 
 model Wallet {
-  id        String  @id @default(cuid())
-  userId    String  @unique
-  user      User    @relation(fields: [userId], references: [id])
-  currency  String  @default("USD")
-  balanceCents Int  @default(0)
+  id            String  @id @default(cuid())
+  userId        String  @unique
+  currency      String  @default("USD")
+  balanceCents  Int     @default(0)
   paymentMethod String?
   payoutDetails String?
+  user          User    @relation(fields: [userId], references: [id])
 }
 
 model Asset {
-  id        String  @id @default(cuid())
-  ownerId   String
-  owner     User    @relation(fields: [ownerId], references: [id])
-  label     String
-  regionId  String?
+  id         String   @id @default(cuid())
+  ownerId    String
+  label      String
+  regionId   String?
   capacityKw Float?
-  meter     Meter?
-  createdAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+  owner      User     @relation(fields: [ownerId], references: [id])
+  meter      Meter?
 }
 
 model Meter {
-  id        String  @id @default(cuid())
-  assetId   String  @unique
-  asset     Asset   @relation(fields: [assetId], references: [id])
-  whTotal   Int     @default(0)
+  id        String   @id @default(cuid())
+  assetId   String   @unique
+  whTotal   Int      @default(0)
   updatedAt DateTime @updatedAt
+  asset     Asset    @relation(fields: [assetId], references: [id])
 }
 
 model EventLog {
-  id        String  @id @default(cuid())
+  id        String   @id @default(cuid())
   type      String
   refId     String?
   payload   String?
@@ -64,42 +64,301 @@ model EventLog {
 }
 
 model Offer {
-  id        String  @id @default(cuid())
-  userId    String
-  user      User    @relation(fields: [userId], references: [id])
-  regionId  String?
+  id               String   @id @default(cuid())
+  userId           String
+  regionId         String?
   priceCentsPerKwh Int
   quantityKwh      Float
-  filledKwh        Float @default(0)
-  status    String @default("OPEN")
-  createdAt DateTime @default(now())
+  filledKwh        Float    @default(0)
+  status           String   @default("OPEN")
+  createdAt        DateTime @default(now())
+  user             User     @relation(fields: [userId], references: [id])
 }
 
 model Request {
-  id        String  @id @default(cuid())
-  userId    String
-  user      User    @relation(fields: [userId], references: [id])
-  regionId  String?
+  id                  String   @id @default(cuid())
+  userId              String
+  regionId            String?
   maxPriceCentsPerKwh Int
-  quantityKwh          Float
-  filledKwh            Float @default(0)
-  status    String @default("OPEN")
-  createdAt DateTime @default(now())
-  reservedCents Int   @default(0)
+  quantityKwh         Float
+  filledKwh           Float    @default(0)
+  status              String   @default("OPEN")
+  createdAt           DateTime @default(now())
+  reservedCents       Int      @default(0)
+  user                User     @relation(fields: [userId], references: [id])
 }
 
 model Trade {
-  id        String  @id @default(cuid())
-  buyerId   String
-  buyer     User    @relation("buyerTrades", fields: [buyerId], references: [id])
-  sellerId  String
-  seller    User    @relation("sellerTrades", fields: [sellerId], references: [id])
-  regionId  String?
-  offerId   String
-  requestId String
+  id               String   @id @default(cuid())
+  buyerId          String
+  sellerId         String
+  regionId         String?
+  offerId          String
+  requestId        String
   priceCentsPerKwh Int
   quantityKwh      Float
   amountCents      Int
-  status    String @default("PENDING")
+  status           String   @default("PENDING")
+  createdAt        DateTime @default(now())
+  buyer            User     @relation("buyerTrades", fields: [buyerId], references: [id])
+  seller           User     @relation("sellerTrades", fields: [sellerId], references: [id])
+}
+
+model TelemetryFrame {
+  id        String   @id @default(cuid())
+  sessionId String?
+  tsGateway DateTime
+  seq       Int?
+  signals   Json
+  quality   String?
+  alerts    Json?
   createdAt DateTime @default(now())
+
+  @@index([tsGateway])
+}
+
+model SessionState {
+  id             String    @id @default(cuid())
+  sessionId      String    @unique
+  marketActive   Boolean   @default(false)
+  paused         Boolean   @default(false)
+  priceUsdPerKwh Float?
+  thresholds     Json?
+  createdAt      DateTime  @default(now())
+  endedAt        DateTime?
+}
+
+model ControlCommand {
+  id        String    @id @default(cuid())
+  sessionId String?
+  type      String
+  payload   Json?
+  issuedAt  DateTime  @default(now())
+  appliedAt DateTime?
+  status    String    @default("PENDING")
+}
+
+// ============================================
+// Site Configuration
+// ============================================
+
+model Site {
+  id                 String   @id @default(cuid())
+  name               String
+  location           String?
+  timezone           String   @default("Indian/Antananarivo")
+
+  // Solar
+  pvCapacityKwp      Float
+
+  // Battery
+  batteryCapacityKwh Float
+  batteryPowerKw     Float
+  socMinPct          Float    @default(20)
+  socMaxPct          Float    @default(95)
+  etaCharge          Float    @default(0.94)
+  etaDischarge       Float    @default(0.94)
+
+  // Demand
+  peakDemandKw       Float?
+  baseDemandKw       Float?
+  customerCount      Int?
+
+  // Pricing (Ariary)
+  priceMinAriary     Float    @default(1000)
+  priceMaxAriary     Float    @default(2500)
+  priceRefAriary     Float    @default(1750)
+  elasticity         Float    @default(0.6)
+
+  // Meta
+  isActive           Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+// ============================================
+// KORA Simulation Models
+// ============================================
+
+// Stores each optimizer run result
+model OptimizerRun {
+  id                   String   @id @default(cuid())
+  siteId               String   @default("mahavelona")
+  runId                String   @unique
+  simulatedTime        DateTime
+  realTime             DateTime @default(now())
+  status               String   // success, timeout, infeasible, error
+  solver               String
+  solveTimeSec         Float
+  curtailmentRate      Float?
+  totalRevenueAriary   Float?
+  totalCurtailmentKwh  Float?
+  totalDemandServedKwh Float?
+  blackoutHours        Int      @default(0)
+  priceSchedule        Json?
+  batterySchedule      Json?
+  pvForecast           Json?
+  demandForecast       Json?
+  errorMessage         String?
+  createdAt            DateTime @default(now())
+
+  @@index([siteId, simulatedTime])
+}
+
+// Current simulation state (singleton per site)
+model SimulationState {
+  id                 String    @id @default(cuid())
+  siteId             String    @unique @default("mahavelona")
+  isRunning          Boolean   @default(false)
+  isPaused           Boolean   @default(false)
+  timeAcceleration   Float     @default(60)
+  simulatedTime      DateTime
+  startedAt          DateTime?
+  batterySocKwh      Float
+  batterySocPct      Float
+  currentPvKw        Float     @default(0)
+  currentDemandKw    Float     @default(0)
+  currentPriceAriary Float     @default(1750)
+  currentChargeKw    Float     @default(0)
+  currentCurtailKw   Float     @default(0)
+  activeRunId        String?
+  totalEnergyKwh     Float     @default(0)
+  totalCurtailKwh    Float     @default(0)
+  totalRevenueAr     Float     @default(0)
+  updatedAt          DateTime  @updatedAt
+}
+
+// Time-series telemetry for charts
+model SimTelemetry {
+  id            String   @id @default(cuid())
+  siteId        String   @default("mahavelona")
+  simulatedTime DateTime
+  pvKw          Float
+  demandKw      Float
+  priceAriary   Float
+  socKwh        Float
+  socPct        Float
+  chargeKw      Float
+  curtailKw     Float
+  createdAt     DateTime @default(now())
+
+  @@index([siteId, simulatedTime])
+}
+
+// ============================================
+// KORA Forecasting Models
+// ============================================
+
+// Cached weather forecast data from Open-Meteo API
+model WeatherForecast {
+  id           String   @id @default(cuid())
+  siteId       String
+  forecastTime DateTime // When this forecast was generated
+  targetTime   DateTime // What time this forecast is for
+
+  // Solar radiation (W/m²)
+  ghi          Float?   // Global Horizontal Irradiance
+  dni          Float?   // Direct Normal Irradiance
+
+  // Weather conditions
+  cloudCover   Float    // 0-100%
+  temperature  Float    // Celsius
+  humidity     Float?   // 0-100%
+  windSpeed    Float?   // m/s
+  precipitation Float?  // mm
+
+  source       String   @default("open-meteo")
+  createdAt    DateTime @default(now())
+
+  @@index([siteId, targetTime])
+  @@index([forecastTime])
+}
+
+// Solar PV production forecast
+model PVForecast {
+  id           String   @id @default(cuid())
+  siteId       String
+  forecastTime DateTime // When forecast was generated
+  horizonHours Int      @default(24)
+
+  // The forecast (JSON array of hourly kW values)
+  pvKwArray    Json
+
+  // Metadata
+  method       String   @default("physics") // "physics", "ml", "hybrid"
+  weatherSource String?
+  modelVersion String?
+
+  // Accuracy metrics (filled after actuals known)
+  maeKw        Float?   // Mean Absolute Error
+  mapePercent  Float?   // Mean Absolute Percentage Error
+
+  createdAt    DateTime @default(now())
+
+  @@index([siteId, forecastTime])
+}
+
+// Demand forecast
+model DemandForecast {
+  id            String   @id @default(cuid())
+  siteId        String
+  forecastTime  DateTime
+  horizonHours  Int      @default(24)
+
+  // Forecasts (JSON arrays)
+  demandKwArray Json     // Baseline demand
+
+  // Metadata
+  method        String   @default("pattern") // "pattern", "ml"
+  dayType       String?  // "weekday", "weekend", "holiday"
+  priceAdjusted Boolean  @default(false)
+
+  // Accuracy tracking
+  maeKw         Float?
+
+  createdAt     DateTime @default(now())
+
+  @@index([siteId, forecastTime])
+}
+
+// Outage risk assessment
+model OutageRiskAssessment {
+  id             String   @id @default(cuid())
+  siteId         String
+  assessmentTime DateTime
+
+  // Risk levels (0-1 probability)
+  overallRisk    Float
+  socRisk        Float    // Battery depletion risk
+  demandRisk     Float    // Peak demand exceeds supply
+  weatherRisk    Float    // Severe weather impact
+
+  // Risk factors
+  peakDeficitKw  Float?   // Worst-case supply shortfall
+  lowSocHours    Int      @default(0) // Hours below 25% SOC
+
+  // Alert level
+  alertLevel     String   // "normal", "watch", "warning", "critical"
+
+  createdAt      DateTime @default(now())
+
+  @@index([siteId, assessmentTime])
+}
+
+// Forecast accuracy tracking (for continuous improvement)
+model ForecastAccuracy {
+  id            String   @id @default(cuid())
+  siteId        String
+  forecastType  String   // "pv", "demand"
+  forecastId    String   // Reference to PVForecast or DemandForecast
+  targetHour    DateTime
+
+  forecastValue Float
+  actualValue   Float
+  errorKw       Float    // actual - forecast
+  errorPercent  Float?   // error / actual * 100
+
+  createdAt     DateTime @default(now())
+
+  @@index([siteId, forecastType, targetHour])
 }

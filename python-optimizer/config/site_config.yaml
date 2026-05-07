@@ -1,0 +1,174 @@
+# ==========================================================
+# KORA Site Configuration
+# ==========================================================
+# This file defines the physical specifications and operating
+# parameters for a microgrid site.
+#
+# Copy this file as a template for new sites:
+#   cp site_config.yaml mysite_config.yaml
+# ==========================================================
+
+site:
+  # Site identification
+  id: "mahavelona"
+  name: "Mahavelona Pilot"
+  location: "Itasy Region, Madagascar"
+  timezone: "Indian/Antananarivo"  # UTC+3
+  coordinates:
+    latitude: -19.0
+    longitude: 46.5
+
+# ==========================================================
+# Solar PV System
+# ==========================================================
+solar:
+  capacity_kwp: 118.5
+  panel_count: 300
+  panel_model: "TrinaSolar 395W"
+  daily_avg_production_kwh: 548
+  # Sunrise/sunset times (approximate, can be auto-calculated)
+  sunrise_hour: 6
+  sunset_hour: 18
+
+# ==========================================================
+# Battery Energy Storage System (BESS)
+# ==========================================================
+battery:
+  capacity_kwh: 115
+  power_kw: 54
+  module_count: 24
+  module_model: "TESVOLT 4.8 kWh"
+  # Efficiency
+  charge_efficiency: 0.94
+  discharge_efficiency: 0.94
+  # State of charge limits (protect battery life)
+  soc_min_percent: 20
+  soc_max_percent: 95
+
+# ==========================================================
+# Inverter / Power Conversion System
+# ==========================================================
+inverter:
+  capacity_kw: 100
+  count: 2
+  model: "SMA 50 kW"
+
+# ==========================================================
+# Customer Base
+# ==========================================================
+customers:
+  total_connections: 251
+  breakdown:
+    households: 201
+    smes: 34
+    public_institutions: 16
+  # Known peak load
+  peak_load_kw: 53
+
+# ==========================================================
+# Pricing Structure (Ariary/kWh)
+# ==========================================================
+pricing:
+  currency: "MGA"  # Malagasy Ariary
+  currency_symbol: "Ar"
+  # Time-of-use periods
+  time_of_use:
+    peak:
+      start_hour: 17  # 5pm
+      end_hour: 23    # 11pm
+    intermediate:
+      start_hour: 8   # 8am
+      end_hour: 17    # 5pm
+    off_peak:
+      # All other hours (11pm - 8am)
+
+  # Customer category rates (peak, intermediate, off_peak)
+  customer_rates:
+    T1_T2_household:  # Low/medium consumption household
+      peak: 1850
+      intermediate: 1700
+      off_peak: 1850
+    T3_household:     # High consumption household
+      peak: 1900
+      intermediate: 1700
+      off_peak: 1900
+    T4_sme_public:    # SMEs and public institutions
+      peak: 1950
+      intermediate: 1800
+      off_peak: 1950
+    T5_heavy:         # Heavy equipment
+      peak: 2000
+      intermediate: 1900
+      off_peak: 2000
+
+  # Fixed monthly fees (Ariary)
+  fixed_fees:
+    T1_T2: 10000
+    T3: 15000
+    T4: 15000
+    T5: 20000
+
+# ==========================================================
+# KORA Optimization Parameters
+# ==========================================================
+optimization:
+  # Price elasticity of demand
+  # 0.6 = 10% price drop causes 6% demand increase
+  price_elasticity: 0.6
+
+  # Discount range for dynamic pricing
+  min_discount_percent: 0
+  max_discount_percent: 40
+
+  # Minimum time between price changes (minutes)
+  price_stability_minutes: 30
+
+  # Target metrics
+  targets:
+    max_curtailment_percent: 5
+    min_revenue_retention_percent: 85
+
+# ==========================================================
+# Communication / Modbus Settings
+# ==========================================================
+modbus:
+  # See modbus_config.json for detailed register mappings
+  host: "192.168.1.100"
+  port: 502
+  slave_id: 1
+  # Polling interval (seconds)
+  poll_interval_sec: 10
+  # Connection retry settings
+  retry_count: 3
+  retry_delay_sec: 5
+
+# ==========================================================
+# API Integration
+# ==========================================================
+api:
+  base_url: "http://localhost:4000"
+  # How often to push telemetry (seconds)
+  telemetry_push_interval_sec: 10
+  # Authentication token (set via environment variable)
+  # token: ${KORA_API_TOKEN}
+
+# ==========================================================
+# Logging
+# ==========================================================
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  format: "json"  # json or text
+  # Log file (optional, logs to stdout if not set)
+  # file: "/var/log/kora/optimizer.log"
+
+# ==========================================================
+# Alerting
+# ==========================================================
+alerts:
+  enabled: true
+  # Alert thresholds
+  thresholds:
+    battery_soc_low_percent: 30
+    battery_soc_critical_percent: 15
+    curtailment_high_percent: 20
+    inverter_overload_percent: 90

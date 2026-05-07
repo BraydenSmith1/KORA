@@ -1,0 +1,90 @@
+# =============================================================================
+# KORA Site Configuration: Mahavelona Microgrid
+# Africa GreenTec pilot site in Madagascar
+# =============================================================================
+
+site_id: mahavelona
+site_name: Mahavelona Microgrid
+location: Mahavelona, Itasy Region, Madagascar
+timezone: Africa/Nairobi  # East Africa Time (UTC+3)
+
+# -----------------------------------------------------------------------------
+# Battery Storage Configuration
+# TESVOLT modules: 24 × 4.8 kWh = 115 kWh total
+# -----------------------------------------------------------------------------
+battery:
+  capacity_kwh: 115
+  power_kw: 54  # Available discharge/charge power
+  soc_min_percent: 20  # Don't discharge below 20% (battery health)
+  soc_max_percent: 95  # Don't charge above 95%
+  efficiency_charge: 0.94
+  efficiency_discharge: 0.94
+  cycle_cost_per_kwh: 0.01  # Battery degradation cost per kWh cycled
+
+# -----------------------------------------------------------------------------
+# Solar Array Configuration
+# TrinaSolar panels: 300 × 395W = 118.5 kWp
+# -----------------------------------------------------------------------------
+solar:
+  capacity_kw: 118.5
+  daily_production_kwh: 548  # January average
+
+# -----------------------------------------------------------------------------
+# Dynamic Pricing Configuration
+# Prices in Malagasy Ariary (MGA) per kWh
+# Exchange rate: ~4,500 MGA = 1 USD
+# -----------------------------------------------------------------------------
+pricing:
+  min_price: 1000  # Affordability floor (~$0.22/kWh)
+  max_price: 2500  # Regulatory cap (~$0.55/kWh)
+  reference_price: 1750  # Baseline price customers expect (~$0.39/kWh)
+  currency: MGA
+  currency_symbol: Ar
+
+# -----------------------------------------------------------------------------
+# Demand Response Configuration
+# Based on 251 customers: 201 households, 34 SMEs, 16 public
+# -----------------------------------------------------------------------------
+demand:
+  elasticity: 0.6  # 10% price drop → 6% demand increase
+  peak_load_kw: 53  # Evening harvest period peak
+  base_load_kw: 8  # Always-on loads (fridges, minimal lighting)
+
+# -----------------------------------------------------------------------------
+# Grid Connection (Mahavelona is off-grid)
+# -----------------------------------------------------------------------------
+grid:
+  connected: false
+
+# -----------------------------------------------------------------------------
+# Optimizer Settings
+# -----------------------------------------------------------------------------
+optimizer:
+  horizon_hours: 24  # 24-hour optimization horizon
+  timestep_hours: 1.0  # 1-hour timesteps
+  solver: highs  # HiGHS solver (fast, open-source)
+  time_limit_sec: 60  # Max solver time per run
+  curtailment_penalty: 1500  # Value per kWh curtailed (≈ avg revenue)
+  blackout_penalty: 5000  # Penalty per kWh unmet demand
+
+# -----------------------------------------------------------------------------
+# Telemetry Configuration
+# Connect to RSCAD/RTDS via Modbus TCP
+# -----------------------------------------------------------------------------
+telemetry:
+  modbus_host: 192.168.1.100  # RTDS IP address
+  modbus_port: 502
+  poll_interval_sec: 1.0
+  api_url: http://localhost:4000/api/ingest
+  # api_key: YOUR_API_KEY_HERE
+
+# -----------------------------------------------------------------------------
+# Alerting Configuration
+# -----------------------------------------------------------------------------
+alerts:
+  # webhook_url: https://hooks.slack.com/services/...
+  # email: operator@africagreentec.com
+  # sms_number: +261...
+  alert_on_solver_failure: true
+  alert_on_high_curtailment: true
+  curtailment_threshold_percent: 20  # Alert if curtailment > 20%

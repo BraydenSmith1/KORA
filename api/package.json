@@ -12,14 +12,16 @@
     "simulate": "node src/simulate.js"
   },
   "dependencies": {
+    "@axiomhq/winston": "^1.4.0",
     "@prisma/client": "^5.18.0",
     "cors": "^2.8.5",
-    "express": "^4.19.2",
-    "nanoid": "^5.0.7",
-    "zod": "^3.23.8",
     "dotenv": "^16.4.5",
+    "ethers": "^6.11.1",
+    "express": "^4.19.2",
     "morgan": "^1.10.0",
-    "ethers": "^6.11.1"
+    "nanoid": "^5.0.7",
+    "winston": "^3.19.0",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "prisma": "^5.18.0"
